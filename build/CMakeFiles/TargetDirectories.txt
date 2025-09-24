@@ -1,0 +1,3 @@
+/home/jon/Desktop/cpp/opengl/neutron-star/build/CMakeFiles/neutron.dir
+/home/jon/Desktop/cpp/opengl/neutron-star/build/CMakeFiles/edit_cache.dir
+/home/jon/Desktop/cpp/opengl/neutron-star/build/CMakeFiles/rebuild_cache.dir
