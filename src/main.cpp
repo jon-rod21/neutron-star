@@ -1,13 +1,52 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
+#include <math.h>
+#include <vector>
+#include <fstream>
+#include <sstream>
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void genVertices(float radius, int sectors, int stacks);
+void genIndices(int sectors, int stacks);
+
+std::vector<float> vertices;
+std::vector<float> normals;
+std::vector<float> texCoords;
+
+std::vector<int> indices;
+std::vector<int> lineIndices;
+
+float PI = 3.141592f;
+
+
+
+std::string readShaderFile(const char* filePath)
+{
+    std::ifstream shaderFile;
+    std::stringstream shaderStream;
+
+    shaderFile.open(filePath);
+    if (!shaderFile.is_open()){
+        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+        return "";
+    }
+
+    shaderStream << shaderFile.rdbuf();
+    shaderFile.close();
+
+    return shaderStream.str();
+}
 
 // SHADER SOURCE: you are telling gpu (in gpu code) how you want to process
 // the vertex information you are giving it
+/*
 const char *vertexShaderSource = 
     "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -23,13 +62,13 @@ const char *fragmentShaderSource =
     "{\n"
     "   FragColor = vec4(0.7f, 0.0f, 0.7f, 1.0f);\n"
     "}\n\0";
+*/
 
 int main()
 {
     // CORE: very important in all projects
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 
@@ -47,10 +86,18 @@ int main()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
+        std::cout << "Failed to initialize GLAD" << std::endl; return -1;
     }
     // CORE
+
+    
+
+    std::string vertexCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl");
+    std::string fragmentCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");
+
+
+    const char* vertexShaderSource = vertexCode.c_str();
+    const char* fragmentShaderSource = fragmentCode.c_str();
 
     // SHADERS: a place to make shaders
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -74,6 +121,9 @@ int main()
     // so this part of the code is where you set up the rendering for drawing
     // you create your vertex data -> you make your vao, vbo, and maybe ebo
     // VERTEX DATA: here you have the actual points you are drawing onto the screen
+
+
+    /*
     float vertices[] = {
         0.5f, 0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
@@ -82,78 +132,109 @@ int main()
     };
 
 
-
-    std::vector<float>.swap(vertices);
-    std::vector<float>.swap(normals);
-    std::vector<float>.swap(texCoords);
-
-    float x, y, z, xy;
-    float nx, ny, nz, lengthInv = 1.0f / radius;
-    float s, t;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     unsigned int indices[] = {
         0, 1, 3,
         1, 2, 3
     };
+    */
+
+    
+    float radius = 1.0f;
+    int sectors = 64;
+    int stacks = 32;
+
+    genVertices(radius, sectors, stacks);
+    genIndices(sectors, stacks);
+    
+
     // used by EBO to avoid processing overlapping vertices for larger drawings
 
     // heres the cool part: your vao is like a book shelf, holding your vbos,
     // actual data, in memory
 
-    unsigned int VBO, VAO, EBO;
-    // this part creates the objects
+    unsigned int VBO, VAO, EBO, normalVBO, texVBO; // this part creates the objects
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
+    glGenBuffers(1, &normalVBO);
+    glGenBuffers(1, &texVBO);
+
     glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO); // sets VBO as the current active buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
-    // passes the data from vertices to VBO
-
-    // same thing here except with the indices
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // tells opengl how to process the data
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0); // turns on location 0 for the shader 
+    glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, texVBO);
+    glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(float), texCoords.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(0);
+
 
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
+        std::cout << "indices size: " << indices.size() << std::endl;
+
 
         glUseProgram(shaderProgram);
+
+
+        float time = glfwGetTime();
+        glm::mat4 model = glm::mat4(1.0f);
+
+//        model = glm::rotate(model, glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+//        model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        
+        model = glm::rotate(model, time, glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f),
+                                     glm::vec3(0.0f, 0.0f, 0.0f),
+                                     glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),
+                                           800.0f / 600.0f,
+                                           0.1f, 100.0f);
+
+        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
+
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+
+
+        
+
+
+
         glBindVertexArray(VAO);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
 
         glfwSwapBuffers(window);
@@ -185,10 +266,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 void genVertices(float radius, int sectors, int stacks){
-    std::vector<float>.swap(vertices);
-    std::vector<float>.swap(normals);
-    std::vector<float>.swap(texCoords);
-
     float x, y, z, xy;
     float nx, ny, nz, lengthInv = 1.0f / radius;
     float s, t;
@@ -224,6 +301,38 @@ void genVertices(float radius, int sectors, int stacks){
 
             texCoords.push_back(s);
             texCoords.push_back(t);
+        }
+    }
+}
+
+
+void genIndices(int sectors, int stacks){
+    int k1, k2;
+    for (int i = 0; i < stacks; ++i){
+        k1 = i * (sectors + 1);
+        k2 = k1 + sectors + 1;
+
+        for (int j = 0; j < sectors; ++j, ++k1, ++k2){
+            if (i != 0)
+            {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+            if (i != (stacks - 1))
+            {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+            lineIndices.push_back(k1);
+            lineIndices.push_back(k2);
+            if (i != 0)
+            {
+                lineIndices.push_back(k1);
+                lineIndices.push_back(k1 + 1);
+            }
+        }
     }
 }
 
