@@ -3,16 +3,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <iostream>
 #include <math.h>
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void genVertices(float radius, int sectors, int stacks);
 void genIndices(int sectors, int stacks);
 
@@ -24,6 +24,20 @@ std::vector<int> indices;
 std::vector<int> lineIndices;
 
 float PI = 3.141592f;
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(1.0f, 1.0f, 0.0f);
+
+bool firstMouse = true;
+float yaw = -90.0f;
+float pitch = 0.0f;
+float lastX = 800.0f / 2.0;
+float lastY = 600.0 / 2.0;
+float fov = 45.0f;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
 
 
@@ -44,26 +58,6 @@ std::string readShaderFile(const char* filePath)
     return shaderStream.str();
 }
 
-// SHADER SOURCE: you are telling gpu (in gpu code) how you want to process
-// the vertex information you are giving it
-/*
-const char *vertexShaderSource = 
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(0.7f, 0.0f, 0.7f, 1.0f);\n"
-    "}\n\0";
-*/
-
 int main()
 {
     // CORE: very important in all projects
@@ -82,6 +76,11 @@ int main()
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -99,7 +98,6 @@ int main()
     const char* vertexShaderSource = vertexCode.c_str();
     const char* fragmentShaderSource = fragmentCode.c_str();
 
-    // SHADERS: a place to make shaders
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
@@ -118,30 +116,10 @@ int main()
     glDeleteShader(fragmentShader);
 
 
-    // so this part of the code is where you set up the rendering for drawing
-    // you create your vertex data -> you make your vao, vbo, and maybe ebo
-    // VERTEX DATA: here you have the actual points you are drawing onto the screen
-
-
-    /*
-    float vertices[] = {
-        0.5f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        -0.5f, 0.5f, 0.0f
-    };
-
-
-    unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
-    */
-
     
     float radius = 1.0f;
-    int sectors = 64;
-    int stacks = 32;
+    int sectors = 128;
+    int stacks = 64;
 
     genVertices(radius, sectors, stacks);
     genIndices(sectors, stacks);
@@ -192,28 +170,29 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+//        glDisable(GL_CULL_FACE);
 
-        std::cout << "indices size: " << indices.size() << std::endl;
+//        std::cout << "indices size: " << indices.size() << std::endl;
 
 
         glUseProgram(shaderProgram);
 
 
-        float time = glfwGetTime();
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         glm::mat4 model = glm::mat4(1.0f);
 
 //        model = glm::rotate(model, glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 //        model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
         
-        model = glm::rotate(model, time, glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f),
-                                     glm::vec3(0.0f, 0.0f, 0.0f),
-                                     glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),
+        glm::mat4 projection = glm::perspective(glm::radians(fov),
                                            800.0f / 600.0f,
                                            0.1f, 100.0f);
 
@@ -246,6 +225,8 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &normalVBO);
+    glDeleteBuffers(1, &texVBO);
     glDeleteProgram(shaderProgram);
 
 
@@ -256,8 +237,19 @@ int main()
 
 void processInput(GLFWwindow* window)
 {
+    float cameraSpeed = 2.5f * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+       cameraPos += cameraSpeed * cameraFront; 
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+       cameraPos -= cameraSpeed * cameraFront; 
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -334,5 +326,48 @@ void genIndices(int sectors, int stacks){
             }
         }
     }
+}
+
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    fov -= (float)yoffset;
+    if (fov < 1.0f)
+        fov = 1.0f;
+    if (fov > 45.0f)
+        fov = 45.0f;
+
+}
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.05f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(direction);
 }
 
