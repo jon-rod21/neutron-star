@@ -13,23 +13,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void gen_vertices(float radius, int sectors, int stacks);
-void gen_indices(int sectors, int stacks);
 std::string readShaderFile(const char* filePath);
 
 // VBO info 
-std::vector<float> vertices;
-std::vector<float> normals;
-std::vector<float> texCoords;
-
-std::vector<int> indices;
-std::vector<int> lineIndices;
-
-float PI = 3.141592f;
-float radius = 1.0f;
-int sectors = 128;
-int stacks = 64;
-
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(1.0f, 1.0f, 0.0f);
@@ -44,6 +30,172 @@ float fov = 45.0f;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+struct NeutronStar{
+
+
+    float radius;
+    float mass;
+    float rotationSpeed;
+    glm::vec3 rotationAxis;
+    glm::vec3 position;
+
+    //for future bloom stuff
+    glm::vec3 color;
+    float emissionStrength;
+    float pulseFrequency;
+    float pulsePhase;
+
+    std::vector<float> vertices;
+    std::vector<float> normals;
+    std::vector<float> texCoords;
+    std::vector<int> indices;
+    std::vector<int> lineIndices;
+    int sectors, stacks;
+    
+    unsigned int VBO, VAO, EBO, normalVBO, texVBO;
+
+    NeutronStar(float r, float m, int sec, int stk)
+        : radius(r), mass(m), sectors(sec), stacks(stk),
+          rotationSpeed(1.0f), rotationAxis(0.0f, 1.0f, 0.0f),
+          position(0.0f, 0.0f, 0.0f),
+          color(0.6f, 0.8f, 1.0f),
+          emissionStrength(1.0f),
+          pulseFrequency(1.0f),
+          pulsePhase(0.0f) {}
+
+    void generate(){
+        float PI = 3.141592f;
+        
+        // Calculating vertices, normals, and tex for sphere
+        float x, y, z, xy;
+        float nx, ny, nz, lengthInv = 1.0f / radius;
+        float s, t;
+        float sectorStep = 2 * PI / sectors;
+        float stackStep = PI / stacks;
+        float sectorAngle, stackAngle;
+
+        for (int i = 0; i <= stacks; i++){
+            stackAngle = PI / 2 - i * stackStep;
+            xy = radius * cosf(stackAngle);
+            z = radius * sinf(stackAngle);
+
+            for (int j = 0; j <= sectors; j++){
+                sectorAngle = j * sectorStep;
+
+                x = xy * cosf(sectorAngle);
+                y = xy * sinf(sectorAngle);
+                vertices.push_back(x);
+                vertices.push_back(y);
+                vertices.push_back(z);
+
+                nx = x * lengthInv;
+                ny = y * lengthInv;
+                nz = z * lengthInv;
+                normals.push_back(nx);
+                normals.push_back(ny);
+                normals.push_back(nz);
+                
+                s = (float)j / sectors;
+                t = (float)i / stacks;
+
+                texCoords.push_back(s);
+                texCoords.push_back(t);
+            }
+        }
+
+        
+        // Indices
+        int k1, k2;
+        for (int i = 0; i < stacks; ++i){
+            k1 = i * (sectors + 1);
+            k2 = k1 + sectors + 1;
+
+            for (int j = 0; j < sectors; ++j, ++k1, ++k2){
+                if (i != 0)
+                {
+                    indices.push_back(k1);
+                    indices.push_back(k2);
+                    indices.push_back(k1 + 1);
+                }
+                if (i != (stacks - 1))
+                {
+                    indices.push_back(k1 + 1);
+                    indices.push_back(k2);
+                    indices.push_back(k2 + 1);
+                }
+                lineIndices.push_back(k1);
+                lineIndices.push_back(k2);
+                if (i != 0)
+                {
+                    lineIndices.push_back(k1);
+                    lineIndices.push_back(k1 + 1);
+                }
+            }
+        }
+    }
+
+
+    void setupBuffers(){
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+        glGenBuffers(1, &normalVBO);
+        glGenBuffers(1, &texVBO);
+
+        glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO); // sets VBO as the current active buffer
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        
+        glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+
+
+        glBindBuffer(GL_ARRAY_BUFFER, texVBO);
+        glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(float), texCoords.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(2);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
+
+        glBindVertexArray(0);
+
+    }
+
+    void render(){
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+    }
+
+    void update(float deltaTime){
+        // later use for other stuff lol
+        pulsePhase += pulseFrequency * deltaTime;
+
+    }
+
+
+    void cleanup(){
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+        glDeleteBuffers(1, &normalVBO);
+        glDeleteBuffers(1, &texVBO);
+
+    }
+
+
+
+};
 
 
 int main()
@@ -102,44 +254,14 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    gen_vertices(radius, sectors, stacks);
-    gen_indices(sectors, stacks);
-    
 
     // used by EBO to avoid processing overlapping vertices for larger drawings
 
     // heres the cool part: your vao is like a book shelf, holding your vbos, actual data, in memory
 
-    unsigned int VBO, VAO, EBO, normalVBO, texVBO; // this part creates the objects
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glGenBuffers(1, &normalVBO);
-    glGenBuffers(1, &texVBO);
-
-    glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); // sets VBO as the current active buffer
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    
-    glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
-    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-
-
-    glBindBuffer(GL_ARRAY_BUFFER, texVBO);
-    glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(float), texCoords.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
+    NeutronStar star(1.0f, 1.4f, 128, 64);
+    star.generate();
+    star.setupBuffers();
 
 
     while (!glfwWindowShouldClose(window))
@@ -158,6 +280,9 @@ int main()
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+
+        star.update(deltaTime);
 
         glm::mat4 model = glm::mat4(1.0f);
 
@@ -181,10 +306,7 @@ int main()
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        glBindVertexArray(VAO);
-
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        star.render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -192,11 +314,7 @@ int main()
 
 
     // optional but good practice, deallocate unused resources
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteBuffers(1, &normalVBO);
-    glDeleteBuffers(1, &texVBO);
+    star.cleanup();
     glDeleteProgram(shaderProgram);
 
 
@@ -216,86 +334,12 @@ void process_input(GLFWwindow* window)
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-
-
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
-
-void gen_vertices(float radius, int sectors, int stacks){
-    float x, y, z, xy;
-    float nx, ny, nz, lengthInv = 1.0f / radius;
-    float s, t;
-
-
-    float sectorStep = 2 * PI / sectors;
-    float stackStep = PI / stacks;
-    float sectorAngle, stackAngle;
-
-    for (int i = 0; i <= stacks; i++){
-        stackAngle = PI / 2 - i * stackStep;
-        xy = radius * cosf(stackAngle);
-        z = radius * sinf(stackAngle);
-
-        for (int j = 0; j <= sectors; j++){
-            sectorAngle = j * sectorStep;
-
-            x = xy * cosf(sectorAngle);
-            y = xy * sinf(sectorAngle);
-            vertices.push_back(x);
-            vertices.push_back(y);
-            vertices.push_back(z);
-
-            nx = x * lengthInv;
-            ny = y * lengthInv;
-            nz = z * lengthInv;
-            normals.push_back(nx);
-            normals.push_back(ny);
-            normals.push_back(nz);
-            
-            s = (float)j / sectors;
-            t = (float)i / stacks;
-
-            texCoords.push_back(s);
-            texCoords.push_back(t);
-        }
-    }
-}
-
-
-void gen_indices(int sectors, int stacks){
-    int k1, k2;
-    for (int i = 0; i < stacks; ++i){
-        k1 = i * (sectors + 1);
-        k2 = k1 + sectors + 1;
-
-        for (int j = 0; j < sectors; ++j, ++k1, ++k2){
-            if (i != 0)
-            {
-                indices.push_back(k1);
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
-            }
-            if (i != (stacks - 1))
-            {
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-                indices.push_back(k2 + 1);
-            }
-            lineIndices.push_back(k1);
-            lineIndices.push_back(k2);
-            if (i != 0)
-            {
-                lineIndices.push_back(k1);
-                lineIndices.push_back(k1 + 1);
-            }
-        }
-    }
-}
-
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
