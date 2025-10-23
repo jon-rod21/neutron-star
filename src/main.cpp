@@ -10,12 +10,14 @@
 #include <sstream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+void process_input(GLFWwindow* window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void genVertices(float radius, int sectors, int stacks);
-void genIndices(int sectors, int stacks);
+void gen_vertices(float radius, int sectors, int stacks);
+void gen_indices(int sectors, int stacks);
+std::string readShaderFile(const char* filePath);
 
+// VBO info 
 std::vector<float> vertices;
 std::vector<float> normals;
 std::vector<float> texCoords;
@@ -24,6 +26,9 @@ std::vector<int> indices;
 std::vector<int> lineIndices;
 
 float PI = 3.141592f;
+float radius = 1.0f;
+int sectors = 128;
+int stacks = 64;
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -40,23 +45,6 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 
-
-std::string readShaderFile(const char* filePath)
-{
-    std::ifstream shaderFile;
-    std::stringstream shaderStream;
-
-    shaderFile.open(filePath);
-    if (!shaderFile.is_open()){
-        std::cerr << "Failed to open shader file: " << filePath << std::endl;
-        return "";
-    }
-
-    shaderStream << shaderFile.rdbuf();
-    shaderFile.close();
-
-    return shaderStream.str();
-}
 
 int main()
 {
@@ -106,7 +94,6 @@ int main()
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
@@ -115,20 +102,13 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-
-    
-    float radius = 1.0f;
-    int sectors = 128;
-    int stacks = 64;
-
-    genVertices(radius, sectors, stacks);
-    genIndices(sectors, stacks);
+    gen_vertices(radius, sectors, stacks);
+    gen_indices(sectors, stacks);
     
 
     // used by EBO to avoid processing overlapping vertices for larger drawings
 
-    // heres the cool part: your vao is like a book shelf, holding your vbos,
-    // actual data, in memory
+    // heres the cool part: your vao is like a book shelf, holding your vbos, actual data, in memory
 
     unsigned int VBO, VAO, EBO, normalVBO, texVBO; // this part creates the objects
     glGenVertexArrays(1, &VAO);
@@ -164,16 +144,13 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        processInput(window);
+        process_input(window);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
 //        glDisable(GL_CULL_FACE);
-
-//        std::cout << "indices size: " << indices.size() << std::endl;
-
 
         glUseProgram(shaderProgram);
 
@@ -204,17 +181,10 @@ int main()
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-
-
-        
-
-
-
         glBindVertexArray(VAO);
 
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
-
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -234,12 +204,10 @@ int main()
     return 0;
 }
 
-
-void processInput(GLFWwindow* window)
+void process_input(GLFWwindow* window)
 {
     float cameraSpeed = 2.5f * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
        cameraPos += cameraSpeed * cameraFront; 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -257,7 +225,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void genVertices(float radius, int sectors, int stacks){
+void gen_vertices(float radius, int sectors, int stacks){
     float x, y, z, xy;
     float nx, ny, nz, lengthInv = 1.0f / radius;
     float s, t;
@@ -298,7 +266,7 @@ void genVertices(float radius, int sectors, int stacks){
 }
 
 
-void genIndices(int sectors, int stacks){
+void gen_indices(int sectors, int stacks){
     int k1, k2;
     for (int i = 0; i < stacks; ++i){
         k1 = i * (sectors + 1);
@@ -369,5 +337,22 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     direction.y = sin(glm::radians(pitch));
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(direction);
+}
+
+std::string readShaderFile(const char* filePath)
+{
+    std::ifstream shaderFile;
+    std::stringstream shaderStream;
+
+    shaderFile.open(filePath);
+    if (!shaderFile.is_open()){
+        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+        return "";
+    }
+
+    shaderStream << shaderFile.rdbuf();
+    shaderFile.close();
+
+    return shaderStream.str();
 }
 
