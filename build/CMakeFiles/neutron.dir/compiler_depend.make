@@ -163,6 +163,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/bits/wctype-wchar.h \
   /usr/include/bits/wordsize.h \
   /usr/include/bits/xopen_lim.h \
+  /usr/include/c++/15.2.1/array \
   /usr/include/c++/15.2.1/backward/binders.h \
   /usr/include/c++/15.2.1/bit \
   /usr/include/c++/15.2.1/bits/alloc_traits.h \
@@ -178,6 +179,8 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/bits/cpp_type_traits.h \
   /usr/include/c++/15.2.1/bits/cxxabi_forced.h \
   /usr/include/c++/15.2.1/bits/cxxabi_init_exception.h \
+  /usr/include/c++/15.2.1/bits/enable_special_members.h \
+  /usr/include/c++/15.2.1/bits/erase_if.h \
   /usr/include/c++/15.2.1/bits/exception.h \
   /usr/include/c++/15.2.1/bits/exception_defines.h \
   /usr/include/c++/15.2.1/bits/exception_ptr.h \
@@ -185,6 +188,8 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/bits/functexcept.h \
   /usr/include/c++/15.2.1/bits/functional_hash.h \
   /usr/include/c++/15.2.1/bits/hash_bytes.h \
+  /usr/include/c++/15.2.1/bits/hashtable.h \
+  /usr/include/c++/15.2.1/bits/hashtable_policy.h \
   /usr/include/c++/15.2.1/bits/invoke.h \
   /usr/include/c++/15.2.1/bits/ios_base.h \
   /usr/include/c++/15.2.1/bits/istream.tcc \
@@ -198,6 +203,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/bits/move.h \
   /usr/include/c++/15.2.1/bits/nested_exception.h \
   /usr/include/c++/15.2.1/bits/new_allocator.h \
+  /usr/include/c++/15.2.1/bits/node_handle.h \
   /usr/include/c++/15.2.1/bits/ostream.h \
   /usr/include/c++/15.2.1/bits/ostream.tcc \
   /usr/include/c++/15.2.1/bits/ostream_insert.h \
@@ -210,6 +216,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/bits/specfun.h \
   /usr/include/c++/15.2.1/bits/sstream.tcc \
   /usr/include/c++/15.2.1/bits/std_abs.h \
+  /usr/include/c++/15.2.1/bits/std_function.h \
   /usr/include/c++/15.2.1/bits/stl_algobase.h \
   /usr/include/c++/15.2.1/bits/stl_bvector.h \
   /usr/include/c++/15.2.1/bits/stl_construct.h \
@@ -224,6 +231,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/bits/streambuf_iterator.h \
   /usr/include/c++/15.2.1/bits/string_view.tcc \
   /usr/include/c++/15.2.1/bits/stringfwd.h \
+  /usr/include/c++/15.2.1/bits/unordered_map.h \
   /usr/include/c++/15.2.1/bits/uses_allocator.h \
   /usr/include/c++/15.2.1/bits/uses_allocator_args.h \
   /usr/include/c++/15.2.1/bits/utility.h \
@@ -236,6 +244,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/climits \
   /usr/include/c++/15.2.1/clocale \
   /usr/include/c++/15.2.1/cmath \
+  /usr/include/c++/15.2.1/compare \
   /usr/include/c++/15.2.1/concepts \
   /usr/include/c++/15.2.1/cstddef \
   /usr/include/c++/15.2.1/cstdint \
@@ -247,12 +256,14 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/debug/assertions.h \
   /usr/include/c++/15.2.1/debug/debug.h \
   /usr/include/c++/15.2.1/exception \
+  /usr/include/c++/15.2.1/ext/aligned_buffer.h \
   /usr/include/c++/15.2.1/ext/alloc_traits.h \
   /usr/include/c++/15.2.1/ext/atomicity.h \
   /usr/include/c++/15.2.1/ext/numeric_traits.h \
   /usr/include/c++/15.2.1/ext/string_conversions.h \
   /usr/include/c++/15.2.1/ext/type_traits.h \
   /usr/include/c++/15.2.1/fstream \
+  /usr/include/c++/15.2.1/functional \
   /usr/include/c++/15.2.1/initializer_list \
   /usr/include/c++/15.2.1/ios \
   /usr/include/c++/15.2.1/iosfwd \
@@ -284,6 +295,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/c++/15.2.1/tuple \
   /usr/include/c++/15.2.1/type_traits \
   /usr/include/c++/15.2.1/typeinfo \
+  /usr/include/c++/15.2.1/unordered_map \
   /usr/include/c++/15.2.1/vector \
   /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/atomic_word.h \
   /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/basic_file.h \
@@ -307,6 +319,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star
   /usr/include/glm/detail/_fixes.hpp \
   /usr/include/glm/detail/_vectorize.hpp \
   /usr/include/glm/detail/compute_common.hpp \
+  /usr/include/glm/detail/compute_vector_decl.hpp \
   /usr/include/glm/detail/compute_vector_relational.hpp \
   /usr/include/glm/detail/func_common.inl \
   /usr/include/glm/detail/func_exponential.inl \
@@ -571,8 +584,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/lib/libc.so.6:
 
-/usr/lib/libXau.so.6:
-
 /usr/lib/libX11.so.6:
 
 /usr/lib/libGLdispatch.so.0:
@@ -653,8 +664,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/glm/ext/vector_int4.hpp:
 
-/usr/include/glm/ext/vector_int2_sized.hpp:
-
 /usr/include/glm/ext/vector_int2.hpp:
 
 /usr/include/glm/ext/vector_int1_sized.hpp:
@@ -702,8 +711,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/glm/ext/vector_bool1.hpp:
 
 /usr/include/glm/ext/scalar_uint_sized.hpp:
-
-/usr/include/glm/ext/scalar_constants.inl:
 
 /usr/include/glm/ext/scalar_constants.hpp:
 
@@ -768,8 +775,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/glm/ext/matrix_double4x4.hpp:
 
 /usr/include/glm/ext/matrix_double4x3_precision.hpp:
-
-/usr/include/glm/ext/matrix_double3x3_precision.hpp:
 
 /usr/include/glm/ext/matrix_double3x3.hpp:
 
@@ -859,7 +864,19 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/glm/detail/func_geometric.inl:
 
-/usr/include/c++/15.2.1/bits/cxxabi_forced.h:
+/usr/include/glm/detail/func_common.inl:
+
+/usr/include/glm/detail/_fixes.hpp:
+
+/usr/include/ctype.h:
+
+/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/os_defines.h:
+
+/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr.h:
+
+/usr/include/glm/ext/matrix_double4x2_precision.hpp:
+
+/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr-default.h:
 
 /usr/include/c++/15.2.1/bits/basic_ios.tcc:
 
@@ -917,6 +934,8 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/bits/locale.h:
 
+/usr/include/c++/15.2.1/array:
+
 /usr/include/bits/fp-logb.h:
 
 /usr/include/wchar.h:
@@ -926,6 +945,14 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/bits/posix1_lim.h:
 
 /usr/include/c++/15.2.1/bits/allocator.h:
+
+/usr/include/wctype.h:
+
+/usr/include/sched.h:
+
+/usr/include/glm/detail/func_exponential.inl:
+
+/usr/include/bits/fp-fast.h:
 
 /usr/include/bits/flt-eval-method.h:
 
@@ -973,14 +1000,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h:
 
-/usr/include/wctype.h:
-
-/usr/include/sched.h:
-
-/usr/include/bits/fp-fast.h:
-
-/usr/include/glm/detail/func_exponential.inl:
-
 /usr/include/bits/struct_rwlock.h:
 
 /usr/include/sys/select.h:
@@ -996,6 +1015,8 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/glm/detail/type_vec2.hpp:
 
 /usr/include/glm/detail/type_mat2x3.inl:
+
+/usr/include/c++/15.2.1/compare:
 
 /usr/include/c++/15.2.1/cwctype:
 
@@ -1079,6 +1100,12 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/bits/locale_classes.tcc:
 
+/usr/include/glm/detail/compute_common.hpp:
+
+/usr/include/strings.h:
+
+/usr/include/c++/15.2.1/tr1/poly_laguerre.tcc:
+
 /usr/include/bits/pthreadtypes-arch.h:
 
 /usr/include/gnu/stubs.h:
@@ -1140,10 +1167,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/glm/ext/matrix_float4x3_precision.hpp:
 
 /usr/include/c++/15.2.1/bits/stl_pair.h:
-
-/usr/include/ctype.h:
-
-/usr/include/c++/15.2.1/bits/basic_string.tcc:
 
 /usr/include/c++/15.2.1/bits/basic_ios.h:
 
@@ -1209,6 +1232,10 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/bits/types/clockid_t.h:
 
+/usr/include/errno.h:
+
+/usr/include/c++/15.2.1/tuple:
+
 /usr/include/features.h:
 
 /usr/include/bits/types/__FILE.h:
@@ -1224,6 +1251,8 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/glm/ext/matrix_float3x4_precision.hpp:
 
 /usr/include/c++/15.2.1/string_view:
+
+/usr/include/glm/detail/compute_vector_decl.hpp:
 
 /usr/include/bits/types/cookie_io_functions_t.h:
 
@@ -1259,15 +1288,31 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/bits/mathcalls-narrow.h:
 
-/usr/include/glm/detail/func_common.inl:
+/usr/include/glm/detail/_vectorize.hpp:
+
+/usr/include/c++/15.2.1/climits:
 
 /usr/include/bits/wordsize.h:
 
 /usr/include/stdio.h:
 
+/usr/include/c++/15.2.1/bits/cxxabi_forced.h:
+
 /usr/include/glm/fwd.hpp:
 
 /usr/include/c++/15.2.1/bits/cxxabi_init_exception.h:
+
+/usr/include/c++/15.2.1/stdexcept:
+
+/usr/lib/libXau.so.6:
+
+/usr/include/c++/15.2.1/bits/erase_if.h:
+
+/usr/include/glm/packing.hpp:
+
+/usr/include/c++/15.2.1/vector:
+
+/usr/include/c++/15.2.1/bits/exception_defines.h:
 
 /usr/lib/crtn.o:
 
@@ -1280,6 +1325,12 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/c++/15.2.1/backward/binders.h:
 
 /usr/include/c++/15.2.1/cctype:
+
+/usr/include/glm/ext/matrix_double3x3_precision.hpp:
+
+/usr/include/c++/15.2.1/bits/hashtable.h:
+
+/usr/include/c++/15.2.1/bits/hashtable_policy.h:
 
 /usr/include/c++/15.2.1/bits/ios_base.h:
 
@@ -1319,6 +1370,8 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/glm/ext/quaternion_relational.inl:
 
+/usr/include/c++/15.2.1/bits/enable_special_members.h:
+
 /usr/include/c++/15.2.1/bits/stringfwd.h:
 
 /usr/include/c++/15.2.1/bits/new_allocator.h:
@@ -1328,6 +1381,20 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/bits/stdint-uintn.h:
 
 /usr/include/c++/15.2.1/system_error:
+
+/usr/include/c++/15.2.1/bits/basic_string.tcc:
+
+/usr/include/c++/15.2.1/bits/node_handle.h:
+
+/usr/include/c++/15.2.1/bits/refwrap.h:
+
+/usr/include/bits/dlfcn.h:
+
+/usr/include/bits/cpu-set.h:
+
+/usr/include/c++/15.2.1/bits/streambuf.tcc:
+
+/usr/include/c++/15.2.1/unordered_map:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h:
 
@@ -1343,15 +1410,9 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/bits/range_access.h:
 
-/usr/include/c++/15.2.1/bits/refwrap.h:
-
-/usr/include/bits/dlfcn.h:
-
-/usr/include/bits/cpu-set.h:
-
-/usr/include/c++/15.2.1/bits/streambuf.tcc:
-
 /usr/include/c++/15.2.1/bits/specfun.h:
+
+/usr/include/c++/15.2.1/bits/std_function.h:
 
 /usr/include/c++/15.2.1/bits/stl_iterator.h:
 
@@ -1375,15 +1436,15 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/exception:
 
-/usr/include/c++/15.2.1/tuple:
-
-/usr/include/errno.h:
-
 /usr/include/c++/15.2.1/bits/streambuf_iterator.h:
 
 /usr/include/bits/typesizes.h:
 
 /usr/include/c++/15.2.1/bits/string_view.tcc:
+
+/usr/include/glm/ext/vector_int2_sized.hpp:
+
+/usr/include/c++/15.2.1/bits/unordered_map.h:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/cpu_defines.h:
 
@@ -1415,8 +1476,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/cfloat:
 
-/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/os_defines.h:
-
 /usr/include/c++/15.2.1/clocale:
 
 /usr/include/endian.h:
@@ -1437,9 +1496,15 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/new:
 
+/usr/include/c++/15.2.1/ext/aligned_buffer.h:
+
 /usr/include/c++/15.2.1/ext/alloc_traits.h:
 
 /usr/include/c++/15.2.1/ext/type_traits.h:
+
+/usr/include/glm/ext/scalar_constants.inl:
+
+/usr/include/c++/15.2.1/functional:
 
 /usr/include/c++/15.2.1/initializer_list:
 
@@ -1451,21 +1516,7 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/iostream:
 
-/usr/include/strings.h:
-
-/usr/include/c++/15.2.1/tr1/poly_laguerre.tcc:
-
-/usr/include/glm/detail/compute_common.hpp:
-
 /usr/include/c++/15.2.1/sstream:
-
-/usr/include/c++/15.2.1/stdexcept:
-
-/usr/include/glm/packing.hpp:
-
-/usr/include/c++/15.2.1/bits/exception_defines.h:
-
-/usr/include/c++/15.2.1/vector:
 
 /usr/include/glm/ext/matrix_double2x3.hpp:
 
@@ -1489,9 +1540,9 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/basic_file.h:
 
-/usr/include/bits/types/__sigset_t.h:
-
 /usr/include/glm/detail/compute_vector_relational.hpp:
+
+/usr/include/bits/types/__sigset_t.h:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++config.h:
 
@@ -1500,15 +1551,3 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/c++locale.h:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/ctype_inline.h:
-
-/usr/include/glm/ext/matrix_double4x2_precision.hpp:
-
-/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr-default.h:
-
-/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr.h:
-
-/usr/include/glm/detail/_fixes.hpp:
-
-/usr/include/c++/15.2.1/climits:
-
-/usr/include/glm/detail/_vectorize.hpp:

@@ -30,11 +30,15 @@ float fov = 45.0f;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+const double solarMass = 1.980e30;
+const float PI = 3.141592f;
+
 struct NeutronStar{
 
 
     float radius;
-    float mass;
+    double mass;
+    float period;
     float rotationSpeed;
     glm::vec3 rotationAxis;
     glm::vec3 position;
@@ -45,6 +49,7 @@ struct NeutronStar{
     float pulseFrequency;
     float pulsePhase;
 
+    // Sphere gen storage
     std::vector<float> vertices;
     std::vector<float> normals;
     std::vector<float> texCoords;
@@ -54,9 +59,9 @@ struct NeutronStar{
     
     unsigned int VBO, VAO, EBO, normalVBO, texVBO;
 
-    NeutronStar(float r, float m, int sec, int stk)
-        : radius(r), mass(m), sectors(sec), stacks(stk),
-          rotationSpeed(1.0f), rotationAxis(0.0f, 1.0f, 0.0f),
+    NeutronStar(float r, double m, int sec, int stk, float per)
+        : radius(r), mass(m * solarMass), sectors(sec), stacks(stk), period(per),
+          rotationSpeed((2.0f * PI) / period), rotationAxis(0.0f, 1.0f, 0.0f),
           position(0.0f, 0.0f, 0.0f),
           color(0.6f, 0.8f, 1.0f),
           emissionStrength(1.0f),
@@ -64,8 +69,6 @@ struct NeutronStar{
           pulsePhase(0.0f) {}
 
     void generate(){
-        float PI = 3.141592f;
-        
         // Calculating vertices, normals, and tex for sphere
         float x, y, z, xy;
         float nx, ny, nz, lengthInv = 1.0f / radius;
@@ -259,7 +262,7 @@ int main()
 
     // heres the cool part: your vao is like a book shelf, holding your vbos, actual data, in memory
 
-    NeutronStar star(1.0f, 1.4f, 128, 64);
+    NeutronStar star(1.0f, 1.4f, 128, 64, .0014f);
     star.generate();
     star.setupBuffers();
 
@@ -272,9 +275,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
-//        glDisable(GL_CULL_FACE);
+        glDisable(GL_CULL_FACE);
 
         glUseProgram(shaderProgram);
+
 
 
         float currentFrame = glfwGetTime();
@@ -290,7 +294,7 @@ int main()
 //        model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
         
-        model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, star.rotationSpeed * currentFrame, star.rotationAxis);
 
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
