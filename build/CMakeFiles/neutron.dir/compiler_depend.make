@@ -73,6 +73,7 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o: /home/jon/Desktop/cpp/opengl/neut
 CMakeFiles/neutron.dir/src/main.cpp.o: /home/jon/Desktop/cpp/opengl/neutron-star/src/main.cpp \
   /home/jon/Desktop/cpp/opengl/neutron-star/libs/glad/include/KHR/khrplatform.h \
   /home/jon/Desktop/cpp/opengl/neutron-star/libs/glad/include/glad/glad.h \
+  /home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/shader.h \
   /usr/include/GLFW/glfw3.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/bitsperlong.h \
@@ -878,6 +879,8 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/gthr-default.h:
 
+/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/error_constants.h:
+
 /usr/include/c++/15.2.1/bits/basic_ios.tcc:
 
 /usr/include/bits/libm-simd-decl-stubs.h:
@@ -979,6 +982,12 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/include/asm/posix_types.h:
 
 /usr/include/asm-generic/errno-base.h:
+
+/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/shader.h:
+
+/usr/include/glm/ext/matrix_float3x4_precision.hpp:
+
+/usr/include/c++/15.2.1/string_view:
 
 /usr/include/c++/15.2.1/bits/concept_check.h:
 
@@ -1192,12 +1201,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/bits/floatn-common.h:
 
-/usr/include/c++/15.2.1/bits/cpp_type_traits.h:
-
-/usr/include/time.h:
-
-/usr/include/c++/15.2.1/bits/fstream.tcc:
-
 /usr/include/bits/long-double.h:
 
 /usr/lib/libc.so:
@@ -1248,13 +1251,15 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 
 /usr/include/c++/15.2.1/cstdlib:
 
-/usr/include/glm/ext/matrix_float3x4_precision.hpp:
-
-/usr/include/c++/15.2.1/string_view:
-
 /usr/include/glm/detail/compute_vector_decl.hpp:
 
 /usr/include/bits/types/cookie_io_functions_t.h:
+
+/usr/include/c++/15.2.1/bits/cpp_type_traits.h:
+
+/usr/include/time.h:
+
+/usr/include/c++/15.2.1/bits/fstream.tcc:
 
 /usr/include/bits/types/locale_t.h:
 
@@ -1399,8 +1404,6 @@ CMakeFiles/neutron.dir/libs/glad/src/glad.c.o:
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h:
 
 /usr/include/c++/15.2.1/bits/ostream.tcc:
-
-/usr/include/c++/15.2.1/x86_64-pc-linux-gnu/bits/error_constants.h:
 
 /usr/include/c++/15.2.1/bits/ostream_insert.h:
 

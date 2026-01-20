@@ -75,6 +75,7 @@ CMakeFiles/neutron.dir/src/main.cpp.o
  /home/jon/Desktop/cpp/opengl/neutron-star/src/main.cpp
  /home/jon/Desktop/cpp/opengl/neutron-star/libs/glad/include/KHR/khrplatform.h
  /home/jon/Desktop/cpp/opengl/neutron-star/libs/glad/include/glad/glad.h
+ /home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/shader.h
  /usr/include/GLFW/glfw3.h
  /usr/include/alloca.h
  /usr/include/asm-generic/bitsperlong.h

@@ -6,14 +6,15 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
-#include <fstream>
-#include <sstream>
+//#include <fstream>
+//#include <sstream>
+#include "shaders/shader.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-std::string readShaderFile(const char* filePath);
+//std::string readShaderFile(const char* filePath);
 
 // VBO info 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -169,21 +170,17 @@ struct NeutronStar{
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
 
         glBindVertexArray(0);
-
     }
 
     void render(){
-
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
-
     }
 
     void update(float deltaTime){
         // later use for other stuff lol
         pulsePhase += pulseFrequency * deltaTime;
-
     }
 
 
@@ -233,29 +230,30 @@ int main()
     // CORE
 
     
+    Shader starShader("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl", "/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");
 
-    std::string vertexCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl");
-    std::string fragmentCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");
-
-
-    const char* vertexShaderSource = vertexCode.c_str();
-    const char* fragmentShaderSource = fragmentCode.c_str();
-
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+//    std::string vertexCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl");
+//    std::string fragmentCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");
+//
+//
+//    const char* vertexShaderSource = vertexCode.c_str();
+//    const char* fragmentShaderSource = fragmentCode.c_str();
+//
+//    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+//    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+//    glCompileShader(vertexShader);
+//
+//    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+//    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+//    glCompileShader(fragmentShader);
+//
+//    unsigned int shaderProgram = glCreateProgram();
+//    glAttachShader(shaderProgram, vertexShader);
+//    glAttachShader(shaderProgram, fragmentShader);
+//    glLinkProgram(shaderProgram);
+//
+//    glDeleteShader(vertexShader);
+//    glDeleteShader(fragmentShader);
 
 
     // used by EBO to avoid processing overlapping vertices for larger drawings
@@ -269,6 +267,10 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        
         process_input(window);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -277,23 +279,19 @@ int main()
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
-        glUseProgram(shaderProgram);
+//        glUseProgram(shaderProgram);
 
+        starShader.use();
+        starShader.setVec3("viewPos", cameraPos);
 
-
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
 
 
         star.update(deltaTime);
 
         glm::mat4 model = glm::mat4(1.0f);
 
-//        model = glm::rotate(model, glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-//        model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+//        model = glm::rotate(model, glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f)); model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        
         model = glm::rotate(model, star.rotationSpeed * currentFrame, star.rotationAxis);
 
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
@@ -302,9 +300,9 @@ int main()
                                            800.0f / 600.0f,
                                            0.1f, 100.0f);
 
-        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
-        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
-        unsigned int projLoc = glGetUniformLocation(shaderProgram, "projection");
+        unsigned int modelLoc = glGetUniformLocation(starShader.ID, "model");
+        unsigned int viewLoc = glGetUniformLocation(starShader.ID, "view");
+        unsigned int projLoc = glGetUniformLocation(starShader.ID, "projection");
 
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -319,7 +317,7 @@ int main()
 
     // optional but good practice, deallocate unused resources
     star.cleanup();
-    glDeleteProgram(shaderProgram);
+    //glDeleteProgram(shaderProgram);
 
 
     glfwTerminate();
@@ -387,20 +385,20 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     cameraFront = glm::normalize(direction);
 }
 
-std::string readShaderFile(const char* filePath)
-{
-    std::ifstream shaderFile;
-    std::stringstream shaderStream;
-
-    shaderFile.open(filePath);
-    if (!shaderFile.is_open()){
-        std::cerr << "Failed to open shader file: " << filePath << std::endl;
-        return "";
-    }
-
-    shaderStream << shaderFile.rdbuf();
-    shaderFile.close();
-
-    return shaderStream.str();
-}
+//std::string readShaderFile(const char* filePath)
+//{
+//    std::ifstream shaderFile;
+//    std::stringstream shaderStream;
+//
+//    shaderFile.open(filePath);
+//    if (!shaderFile.is_open()){
+//        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+//        return "";
+//    }
+//
+//    shaderStream << shaderFile.rdbuf();
+//    shaderFile.close();
+//
+//    return shaderStream.str();
+//}
 
