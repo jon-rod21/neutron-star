@@ -33,6 +33,12 @@ void main()
     float ambientStrength = 0.1;
     vec3 ambient = ambientStrength * lightColor;
 
+
+    //emissive
+    float emissiveStrength = 1.5;
+    vec3 emissive = objectColor  * emissiveStrength;
+
+
     //diffuse
     vec3 norm = normalize(Normal);
     vec3 lightPos = vec3(2.0, 2.0, 5.0);
@@ -47,7 +53,9 @@ void main()
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;
 
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 result = (emissive + diffuse + specular);
+
+    //vec3 result = (ambient + diffuse + specular) * objectColor;
     FragColor = vec4(result, 1.0);
 }
 
