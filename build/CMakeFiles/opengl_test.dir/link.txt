@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/opengl_test.dir/link.d CMakeFiles/opengl_test.dir/src/main.cpp.o CMakeFiles/opengl_test.dir/libs/glad/src/glad.c.o -o opengl_test  /usr/lib/libglfw.so.3.4 /usr/lib/libGL.so
