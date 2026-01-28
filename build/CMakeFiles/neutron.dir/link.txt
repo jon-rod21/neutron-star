@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/neutron.dir/link.d CMakeFiles/neutron.dir/src/main.cpp.o CMakeFiles/neutron.dir/libs/glad/src/glad.c.o -o neutron  /usr/lib/libglfw.so.3.4 /usr/lib/libGL.so
