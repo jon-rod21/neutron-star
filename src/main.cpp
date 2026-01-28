@@ -10,11 +10,15 @@
 //#include <sstream>
 #include "shaders/shader.h"
 
+
+#define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
+#define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-//std::string readShaderFile(const char* filePath);
 
 // VBO info 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -230,7 +234,7 @@ int main()
     // CORE
 
     
-    Shader starShader("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl", "/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");
+    Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
 
 //    std::string vertexCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/vertex_shader.glsl");
 //    std::string fragmentCode = readShaderFile("/home/jon/Desktop/cpp/opengl/neutron-star/src/shaders/fragment_shader.glsl");

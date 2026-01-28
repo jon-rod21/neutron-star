@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(neutron-star)
+add_definitions(-DSHADER_DIR="${CMAKE_SOURCE_DIR}/src/shaders/")
 
 set(CMAKE_CXX_STANDARD 17)
 
