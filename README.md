@@ -1,5 +1,10 @@
 # Neutron Star Render in OpenGL
 
+## How to Run: 
+
+Clone this repo then run the make_build.sh script and you should be good to go.
+Download any dependencies as needed (aka all the opengl and cpp stuff).
+
 ## Goals to complete
 
 - [ ] Render star

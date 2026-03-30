@@ -56,6 +56,7 @@ public:
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragment, 1, &fShaderCode, NULL);
         glCompileShader(fragment);
+        checkCompileErrors(fragment, "FRAGMENT");
         //check
         
         ID = glCreateProgram();
@@ -133,6 +134,32 @@ public:
     }
 
 private:
+//    void checkCompileErrors(GLuint shader, std::string type)
+//    {
+//        GLint success;
+//        GLchar infoLog[1024];
+//        if (type != "PROGRAM")
+//        {
+//            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+//            if (!success)
+//            {
+//                glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+//                std::cout << "ERROR::SHADER_COMPLIATION_ERROR of type: " << type << "\n" << infoLog << "\n" << std::endl;
+//            }
+//        }
+//        else
+//        {
+//            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+//            if (!success)
+//            {
+//                glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+//                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n" << std::endl;
+//            }
+//        }
+//    }
+//};
+
+
     void checkCompileErrors(GLuint shader, std::string type)
     {
         GLint success;
@@ -143,7 +170,11 @@ private:
             if (!success)
             {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_COMPLIATION_ERROR of type: " << type << "\n" << infoLog << "\n" << std::endl;
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+            else
+            {
+                std::cout << "SUCCESS: " << type << " shader compiled successfully" << std::endl;
             }
         }
         else
@@ -152,7 +183,11 @@ private:
             if (!success)
             {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n" << std::endl;
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            }
+            else
+            {
+                std::cout << "SUCCESS: Program linked successfully" << std::endl;
             }
         }
     }
