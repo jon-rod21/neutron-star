@@ -19,7 +19,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(1.0f, 1.0f, 0.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 bool firstMouse = true;
 float yaw = -90.0f;
@@ -62,7 +62,7 @@ struct NeutronStar{
 
     NeutronStar(float r, double m, int sec, int stk, float per)
         : radius(r), mass(m * solarMass), sectors(sec), stacks(stk), period(per),
-          rotationSpeed((2.0f * PI) / period), rotationAxis(0.0f, 1.0f, 0.0f),
+          rotationSpeed((2.0f * PI) / period), rotationAxis(-1.0f, 1.0f, 0.0f),
           position(0.0f, 0.0f, 0.0f),
           color(0.6f, 0.8f, 1.0f),
           emissionStrength(1.0f),
@@ -145,9 +145,7 @@ struct NeutronStar{
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);
         glGenBuffers(1, &normalVBO);
-        glGenBuffers(1, &texVBO);
-
-        glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
+        glGenBuffers(1, &texVBO); glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO); // sets VBO as the current active buffer
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
