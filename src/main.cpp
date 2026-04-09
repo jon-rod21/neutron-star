@@ -7,6 +7,7 @@
 #include <math.h>
 #include <vector>
 #include "shaders/shader.h"
+#include "Framebuffer.h"
 
 #define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
 #define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
@@ -233,18 +234,92 @@ int main()
     star.generate();
     star.setupBuffers();
 
+    // HDR Framebuffer Post Processing
+    // 1. Initialize our custom HDR Framebuffer
+    Framebuffer hdrFBO(800, 600);
+
+    // 2. Set up a flat 2D quad to render the framebuffer texture onto
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    // Texture coordinate attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+
+    // Screen Shader for Post Processing
+    // 1. Load your existing shaders
+    Shader blurShader(SHADER_DIR "blur_vertex.glsl", SHADER_DIR "blur_fragment.glsl");
+    Shader finalShader(SHADER_DIR "final_vertex.glsl", SHADER_DIR "final_fragment.glsl");
+
+    // 2. Setup Ping-Pong Framebuffers for blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongColorbuffers[2];
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorbuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        // GL_RGBA16F to keep HDR precision during the blur
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 800, 600, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // CLAMP_TO_EDGE is critical here so the blur doesn't wrap around screen edges
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+        
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+    }
+
+    // 3. Configure uniform samplers for your final shader
+    finalShader.use();
+    finalShader.setInt("scene", 0);      // Texture unit 0 will be the base render
+    finalShader.setInt("bloomBlur", 1);  // Texture unit 1 will be the blurred render
+    
+    blurShader.use();
+    blurShader.setInt("image", 0);
+
+    // Render Loop
+
     while (!glfwWindowShouldClose(window))
     {
+        // ==========================================
+        // PER-FRAME TIME LOGIC & INPUT
+        // ==========================================
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         
         process_input(window);
 
+        // ==========================================
+        // PASS 1: RENDER SCENE TO HDR FRAMEBUFFER
+        // ==========================================
+        hdrFBO.bind(); // Draw to our custom buffers, not the screen
+        
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        //glDisable(GL_CULL_FACE);
 
         starShader.use();
         starShader.setVec3("viewPos", cameraPos);
@@ -252,23 +327,83 @@ int main()
 
         star.update(deltaTime);
 
+        // Matrix Math for the Star
         glm::mat4 model = glm::mat4(1.0f);
-
         model = glm::rotate(model, star.rotationSpeed * currentFrame, star.rotationAxis);
-
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-
-        glm::mat4 projection = glm::perspective(glm::radians(fov),
-                                           800.0f / 600.0f,
-                                           0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
 
         starShader.setMat4("model", model);
         starShader.setMat4("view", view);
         starShader.setMat4("projection", projection);
 
-
         star.render();
 
+        hdrFBO.unbind(); // Stop drawing to custom buffers
+
+        // ==========================================
+        // PASS 2: PING-PONG GAUSSIAN BLUR
+        // ==========================================
+        bool horizontal = true, first_iteration = true;
+        unsigned int amount = 10; // Number of blur iterations (higher = wider, softer glow)
+        
+        blurShader.use();
+        glDisable(GL_DEPTH_TEST); // Post-processing quads don't need depth testing
+        
+        for (unsigned int i = 0; i < amount; i++)
+        {
+            // Bind one of the two ping-pong framebuffers
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]); 
+            blurShader.setInt("horizontal", horizontal);
+            
+            glActiveTexture(GL_TEXTURE0);
+            
+            // If it's the first pass, read from the bright extracted texture from Pass 1.
+            // Otherwise, read from the result of the previous blur pass.
+            glBindTexture(
+                GL_TEXTURE_2D, 
+                first_iteration ? hdrFBO.colorBuffers[1] : pingpongColorbuffers[!horizontal]
+            ); 
+            
+            glBindVertexArray(quadVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            
+            // Swap horizontal status for the next pass
+            horizontal = !horizontal;
+            if (first_iteration) 
+                first_iteration = false;
+        }
+        
+        // Unbind back to the default framebuffer (the actual screen)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+
+        // ==========================================
+        // PASS 3: FINAL COMPOSITE & TONE MAPPING
+        // ==========================================
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+
+        finalShader.use();
+        
+        // Tweak this value to make the whole scene brighter or darker!
+        finalShader.setFloat("exposure", 1.0f); 
+        
+        // Bind the normal scene texture to Texture Unit 0
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hdrFBO.colorBuffers[0]);
+        
+        // Bind the final, fully-blurred glow texture to Texture Unit 1
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        
+        // Draw the final combined image to the screen quad
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // ==========================================
+        // SWAP BUFFERS AND POLL EVENTS
+        // ==========================================
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -276,8 +411,10 @@ int main()
 
     // optional but good practice, deallocate unused resources
     star.cleanup();
+    hdrFBO.cleanup();
+    glDeleteFramebuffers(2, pingpongFBO);
+    glDeleteTextures(2, pingpongColorbuffers);
     //glDeleteProgram(shaderProgram);
-
 
     glfwTerminate();
     return 0;
