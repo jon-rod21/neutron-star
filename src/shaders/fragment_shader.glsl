@@ -91,10 +91,30 @@ void main()
     
     // Emission varying across surface
     float emissionPattern = 0.7 + surfaceNoise * 0.8 + poleFactor * 0.3;
+    vec3 baseEmission = starColor * emissiveStrength * emissionPattern;
+
+    // ==========================================
+    // RIM LIGHTING (ECLIPSE EFFECT)
+    // ==========================================
+    // Calculate the angle between the camera view and the surface normal.
+    // 1.0 at the absolute edges, 0.0 in the dead center.
+    float rimFactor = 1.0 - max(dot(viewDir, norm), 0.0);
     
-    vec3 emission = starColor * emissiveStrength * emissionPattern;
+    // Use smoothstep to pinch the rim so it only appears at the very edges, 
+    // rather than softly grading across the whole sphere.
+    // Tweak these numbers (e.g., 0.8, 1.0) to make the eclipse ring thinner or thicker!
+    rimFactor = smoothstep(0.6, 1.0, rimFactor); 
     
-    vec3 result = lighting + emission;
+    // Give the rim a massive brightness boost so it heavily triggers the HDR bloom
+    float rimIntensity = 1.0; 
+    vec3 rimEmission = starColor * rimFactor * rimIntensity;
+
+    // Add the glowing rim to the base surface emission
+    vec3 totalEmission = baseEmission + rimEmission;
+    // ==========================================
+
+    // Final color combines the 3D lighting with the total HDR emission
+    vec3 result = lighting + totalEmission;
 
     // Output the standard HDR color
     FragColor = vec4(result, 1.0);
