@@ -1,10 +1,11 @@
 #version 330 core
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor; // NEW: Second output for bloom
 
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
-
+uniform float time;
 uniform vec3 viewPos;
 
 // Hash for randomness
@@ -74,18 +75,34 @@ void main()
     vec3 lighting = (ambient + diffuse + specular) * starColor;
     
     // Natural looking surface variation using FBM
-    vec3 noisePos = FragPos * 4.0; // Scale for detail level
+    // Add the time variable to make the noise shift continuously
+    vec3 noisePos = FragPos * 4.0 + vec3(time * 0.5); 
     float surfaceNoise = fbm(noisePos);
+
+    // Anything below 0.3 becomes pure black. Anything above 0.7 becomes max brightness.
+    // The values in between interpolate smoothly.
+    surfaceNoise = smoothstep(0.1, 0.9, surfaceNoise);
+    // Exponentially deepens the dark spots
+    surfaceNoise = pow(surfaceNoise, 1.25);
     
     // Poles brighter, its a pulsar after all
     vec3 normalizedPos = normalize(FragPos);
     float poleFactor = pow(abs(normalizedPos.y), 2.0);
     
     // Emission varying across surface
-    float emissionPattern = 0.7 + surfaceNoise * 0.2 + poleFactor * 0.3;
+    float emissionPattern = 0.7 + surfaceNoise * 0.8 + poleFactor * 0.3;
     
     vec3 emission = starColor * emissiveStrength * emissionPattern;
     
     vec3 result = lighting + emission;
+
+    // Output the standard HDR color
     FragColor = vec4(result, 1.0);
+    
+    // Check brightness and output to the second buffer if it exceeds a threshold
+    float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(result, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
