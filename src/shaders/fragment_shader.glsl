@@ -1,6 +1,6 @@
 #version 330 core
 layout (location = 0) out vec4 FragColor;
-layout (location = 1) out vec4 BrightColor; // NEW: Second output for bloom
+layout (location = 1) out vec4 BrightColor; 
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -48,24 +48,20 @@ float fbm(vec3 p) {
 
 void main()
 {
-    // Star color
     vec3 starColor = vec3(0.6, 0.8, 1.0);
     float emissiveStrength = 1.0;
     
     vec3 lightPos = vec3(0.0, 0.0, 0.0);
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
     
-    // Ambient
     float ambientStrength = 0.1;
     vec3 ambient = ambientStrength * lightColor;
     
-    // Diffuse
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
     
-    // Specular
     float specularStrength = 0.5;
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
@@ -74,8 +70,7 @@ void main()
     
     vec3 lighting = (ambient + diffuse + specular) * starColor;
     
-    // Natural looking surface variation using FBM
-    // Add the time variable to make the noise shift continuously
+    // Surface noise using FBM
     vec3 noisePos = FragPos * 4.0 + vec3(time * 0.5); 
     float surfaceNoise = fbm(noisePos);
 
@@ -93,30 +88,18 @@ void main()
     float emissionPattern = 0.7 + surfaceNoise * 0.8 + poleFactor * 0.3;
     vec3 baseEmission = starColor * emissiveStrength * emissionPattern;
 
-    // ==========================================
-    // RIM LIGHTING (ECLIPSE EFFECT)
-    // ==========================================
+    /* Rim Lighting */
     // Calculate the angle between the camera view and the surface normal.
     // 1.0 at the absolute edges, 0.0 in the dead center.
     float rimFactor = 1.0 - max(dot(viewDir, norm), 0.0);
-    
-    // Use smoothstep to pinch the rim so it only appears at the very edges, 
-    // rather than softly grading across the whole sphere.
-    // Tweak these numbers (e.g., 0.8, 1.0) to make the eclipse ring thinner or thicker!
     rimFactor = smoothstep(0.6, 1.0, rimFactor); 
-    
-    // Give the rim a massive brightness boost so it heavily triggers the HDR bloom
     float rimIntensity = 1.0; 
     vec3 rimEmission = starColor * rimFactor * rimIntensity;
 
-    // Add the glowing rim to the base surface emission
+    // Combine Emissions
     vec3 totalEmission = baseEmission + rimEmission;
-    // ==========================================
 
-    // Final color combines the 3D lighting with the total HDR emission
     vec3 result = lighting + totalEmission;
-
-    // Output the standard HDR color
     FragColor = vec4(result, 1.0);
     
     // Check brightness and output to the second buffer if it exceeds a threshold

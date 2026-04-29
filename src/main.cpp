@@ -8,11 +8,10 @@
 #include <vector>
 #include "shaders/shader.h"
 #include "Framebuffer.h"
-#include "BloomRenderer.h" // NEW
+#include "BloomRenderer.h"
 
 #define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
 #define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
-
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
@@ -37,7 +36,6 @@ const double solarMass = 1.980e30;
 const float PI = 3.141592f;
 
 struct NeutronStar{
-
 
     float radius;
     double mass;
@@ -147,9 +145,9 @@ struct NeutronStar{
         glGenBuffers(1, &VBO);
         glGenBuffers(1, &EBO);
         glGenBuffers(1, &normalVBO);
-        glGenBuffers(1, &texVBO); glBindVertexArray(VAO); // VERY IMPORTANT, this activates the vao, ready for vbo's
+        glGenBuffers(1, &texVBO); glBindVertexArray(VAO); 
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO); // sets VBO as the current active buffer
+        glBindBuffer(GL_ARRAY_BUFFER, VBO); 
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -183,7 +181,6 @@ struct NeutronStar{
         pulsePhase += pulseFrequency * deltaTime;
     }
 
-
     void cleanup(){
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
@@ -192,9 +189,86 @@ struct NeutronStar{
         glDeleteBuffers(1, &texVBO);
 
     }
+};
 
+struct Cone
+{
+    std::vector<float> vertices;
+    std::vector<float> normals;
+    std::vector<unsigned int> indices;
+    unsigned int VAO, VBO, normalVBO, EBO;
 
+    void generate(float radius, float height, int segments)
+    {
+        vertices.push_back(0.0f);
+        vertices.push_back(0.0f);
+        vertices.push_back(0.0f);
 
+        normals.push_back(0.0f);
+        normals.push_back(1.0f);
+        normals.push_back(0.0f);
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * 2.0f * PI;
+            float x = cos(angle) * radius;
+            float z = sin(angle) * radius;
+
+            vertices.push_back(x);
+            vertices.push_back(-height);
+            vertices.push_back(z);
+
+            normals.push_back(0.0f);
+            normals.push_back(-1.0f);
+            normals.push_back(0.0f);
+        }
+
+        for (int i = 1; i <= segments; i++)
+        {
+            indices.push_back(0);
+            indices.push_back(1);
+            indices.push_back(i + 1);
+        }
+    }
+
+    void setupBuffers(){
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &normalVBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO); 
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW); 
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        
+        glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+        glBindVertexArray(0);
+    }
+
+    void render(){
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    void cleanup(){
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &normalVBO);
+        glDeleteBuffers(1, &EBO);
+    }
 };
 
 int main()
@@ -230,10 +304,18 @@ int main()
 
     Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
     Shader skyboxShader(SHADER_DIR "skybox_vertex.glsl", SHADER_DIR "skybox_fragment.glsl");
+    Shader beamShader(VERTEX_SHADER, SHADER_DIR "beam_fragment.glsl");
     
     NeutronStar star(1.0f, 1.4f, 128, 64, .0014f);
     star.generate();
     star.setupBuffers();
+
+    Cone beamCone;
+    beamCone.generate(0.2f, 5.0f, 16);
+    beamCone.setupBuffers();
+
+
+
 
     // HDR Framebuffer Post Processing
     // Initialize our custom HDR Framebuffer
@@ -307,16 +389,14 @@ int main()
         
         process_input(window);
 
-        // ==========================================
         // PASS 1: RENDER SCENE TO HDR FRAMEBUFFER
-        // ==========================================
         hdrFBO.bind(); // Draw to our custom buffers, not the screen
         
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
-        // --- Render Neutron Star ---
+        // Render Neutron Star
         starShader.use();
         starShader.setVec3("viewPos", cameraPos);
         starShader.setFloat("time", currentFrame);
@@ -335,7 +415,39 @@ int main()
 
         star.render();
 
-        // --- Render Procedural Skybox ---
+        /* Beam Rendering */
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        
+        beamShader.use();
+        beamShader.setFloat("time", currentFrame);
+
+        float pulsePhase = sin(currentFrame * 2.0f * 2.0f * PI) * 0.5f + 0.5f;
+        beamShader.setFloat("pulsePhase", pulsePhase);
+
+        // North Beam
+        glm::mat4 beamModel = glm::mat4(1.0f);
+        beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
+        beamModel = glm::translate(beamModel, glm::vec3(0.0f, 1.0f, 0.0f));
+        beamShader.setMat4("model", beamModel);
+        beamShader.setMat4("view", view);
+        beamShader.setMat4("projection", projection);
+        beamCone.render();
+
+
+        // Flip for south beam
+        beamModel = glm::mat4(1.0f);
+        beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
+        beamModel = glm::translate(beamModel, glm::vec3(0.0f, -1.0f, 0.0f));
+        beamModel = glm::rotate(beamModel, PI, glm::vec3(1.0f, 0.0f, 0.0f));
+        beamShader.setMat4("model", beamModel);
+        beamCone.render();
+
+        glDisable(GL_BLEND);
+        /* Beam Rendering */
+
+
+        // Render Procedural Skybox
         glDepthFunc(GL_LEQUAL);  // Draw skybox behind everything else
         skyboxShader.use();
         
@@ -352,21 +464,13 @@ int main()
         // Done writing to custom FBO
         hdrFBO.unbind(); 
 
-        // ==========================================
         // PASS 2 & 3: BLOOM BLUR & FINAL COMPOSITE
-        // ==========================================
         bloom.renderBloom(hdrFBO.colorBuffers[0], hdrFBO.colorBuffers[1]);
 
-        // ==========================================
-        // SWAP BUFFERS AND POLL EVENTS
-        // ==========================================
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // ==========================================
-    // RESOURCE CLEANUP
-    // ==========================================
     star.cleanup();
     hdrFBO.cleanup();
     bloom.cleanup();
@@ -376,19 +480,46 @@ int main()
     glfwTerminate();
     return 0;
 }
+bool cursorCaptured = true;
 
 void process_input(GLFWwindow* window)
 {
     float cameraSpeed = 2.5f * deltaTime;
+    static bool escPressed = false;
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-       cameraPos += cameraSpeed * cameraFront; 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-       cameraPos -= cameraSpeed * cameraFront; 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        if (!escPressed)
+        {
+            cursorCaptured = !cursorCaptured;
+            if (cursorCaptured)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                firstMouse = true;
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            escPressed = true;
+        }
+    }
+    else
+    {
+        escPressed = false;
+    }
+    
+    if (cursorCaptured)
+    {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+           cameraPos += cameraSpeed * cameraFront; 
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+           cameraPos -= cameraSpeed * cameraFront; 
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -407,6 +538,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    if (!cursorCaptured) return;
     if (firstMouse)
     {
         lastX = xpos;
