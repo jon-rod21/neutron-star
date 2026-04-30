@@ -462,7 +462,32 @@ int main()
         glDepthFunc(GL_LESS); // Restore default depth testing
 
         // Done writing to custom FBO
-        hdrFBO.unbind(); 
+        hdrFBO.unbind();
+
+        // ==========================================
+        // GRAVITATIONAL LENSING UNIFORMS
+        // ==========================================
+        // Project the star's world position into screen-space UV
+        glm::vec4 starClip = projection * view * glm::vec4(star.position, 1.0f);
+        glm::vec2 starScreenPos(0.5f);
+        if (starClip.w > 0.0f) {
+            glm::vec3 starNDC = glm::vec3(starClip) / starClip.w;
+            starScreenPos = glm::vec2(starNDC.x * 0.5f + 0.5f, starNDC.y * 0.5f + 0.5f);
+        }
+
+        // Apparent radius in vertical UV units (small-angle approximation)
+        float distToStar = glm::length(cameraPos - star.position);
+        float apparentRadiusUV = 0.0f;
+        if (distToStar > star.radius) {
+            float halfFovY = glm::radians(fov) * 0.5f;
+            apparentRadiusUV = (star.radius / distToStar) / tanf(halfFovY) * 0.5f;
+        }
+
+        bloom.finalShader->use();
+        bloom.finalShader->setVec2("starScreenPos", starScreenPos);
+        bloom.finalShader->setFloat("starApparentRadius", apparentRadiusUV);
+        bloom.finalShader->setFloat("lensStrength", 0.5f);
+        bloom.finalShader->setFloat("aspectRatio", 800.0f / 600.0f);
 
         // PASS 2 & 3: BLOOM BLUR & FINAL COMPOSITE
         bloom.renderBloom(hdrFBO.colorBuffers[0], hdrFBO.colorBuffers[1]);
