@@ -22,11 +22,14 @@ glm::vec3 cameraPos = glm::vec3(2.5f, 2.5f, 10.0);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
+int SCR_WIDTH = 800;
+int SCR_HEIGHT = 600;
+
 bool firstMouse = true;
 float yaw = -90.0f;
 float pitch = 0.0f;
-float lastX = 800.0f / 2.0;
-float lastY = 600.0 / 2.0;
+float lastX = SCR_WIDTH / 2.0;
+float lastY = SCR_HEIGHT / 2.0;
 float fov = 45.0f;
 
 float deltaTime = 0.0f;
@@ -34,6 +37,7 @@ float lastFrame = 0.0f;
 
 const double solarMass = 1.980e30;
 const float PI = 3.141592f;
+
 
 struct NeutronStar{
 
@@ -279,7 +283,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "bruh", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "neutron-star", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create window" << std::endl;
@@ -289,6 +293,7 @@ int main()
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwGetFramebufferSize(window, &SCR_WIDTH, &SCR_HEIGHT);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
 
@@ -319,8 +324,8 @@ int main()
 
     // HDR Framebuffer Post Processing
     // Initialize our custom HDR Framebuffer
-    Framebuffer hdrFBO(800, 600);
-    BloomRenderer bloom(800, 600); // NEW: Handles all post-processing setup
+    Framebuffer hdrFBO(SCR_WIDTH, SCR_HEIGHT);
+    BloomRenderer bloom(SCR_WIDTH, SCR_HEIGHT); // NEW: Handles all post-processing setup
 
     // PROCEDURAL SKYBOX SETUP
 
@@ -407,7 +412,7 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, star.rotationSpeed * currentFrame, star.rotationAxis);
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         starShader.setMat4("model", model);
         starShader.setMat4("view", view);
@@ -486,8 +491,8 @@ int main()
         bloom.finalShader->use();
         bloom.finalShader->setVec2("starScreenPos", starScreenPos);
         bloom.finalShader->setFloat("starApparentRadius", apparentRadiusUV);
-        bloom.finalShader->setFloat("lensStrength", 0.5f);
-        bloom.finalShader->setFloat("aspectRatio", 800.0f / 600.0f);
+        bloom.finalShader->setFloat("lensStrength", 0.2f);
+        bloom.finalShader->setFloat("aspectRatio", (float)SCR_WIDTH / (float)SCR_HEIGHT);
 
         // PASS 2 & 3: BLOOM BLUR & FINAL COMPOSITE
         bloom.renderBloom(hdrFBO.colorBuffers[0], hdrFBO.colorBuffers[1]);
@@ -549,6 +554,8 @@ void process_input(GLFWwindow* window)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
     glViewport(0, 0, width, height);
 }
 

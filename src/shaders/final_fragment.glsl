@@ -8,40 +8,39 @@ uniform sampler2D bloomBlur;
 uniform float exposure;
 
 // Gravitational lensing
-uniform vec2 starScreenPos;       // star's projected center in [0,1] UV
+uniform vec2 starScreenPos;       // star center in [0,1] UV
 uniform float starApparentRadius; // apparent radius in vertical UV units
-uniform float lensStrength;       // overall bend factor
-uniform float aspectRatio;        // width / height
+uniform float lensStrength;
+uniform float aspectRatio;
 
 void main()
 {
-    // Aspect-correct offset from star center so the lens stays circular
     vec2 offset = TexCoords - starScreenPos;
-    offset.x *= aspectRatio;
+    offset.x *= aspectRatio; // make distance metric circular
     float r = length(offset);
     float safeR = max(r, 1e-5);
     vec2 outward = offset / safeR;
 
-    // Einstein-radius-scaled 1/b deflection (Schwarzschild asymptotic form)
-    float einsteinSq = starApparentRadius * starApparentRadius * lensStrength;
-    float deflection = einsteinSq / safeR;
+    // Warp only outside the star's silhouette
+    // Ramp up over a band that extends 2x the star radius beyond the limb
+    float outerEdge = starApparentRadius * 3.0;
+    float silhouetteMask = smoothstep(starApparentRadius, outerEdge, r);
 
-    // Don't warp inside the silhouette — surface stays intact, ramp in past the limb
-    float silhouetteMask = smoothstep(starApparentRadius * 0.95, starApparentRadius * 1.15, r);
+    // 1/r deflection — light bends toward mass
+    // lensStrength controls how many UV units the rays bend at the limb
+    float deflection = (lensStrength * starApparentRadius) / safeR;
     deflection *= silhouetteMask;
 
-    // Light bends toward the mass: sample the source closer to the center
+    // Bend toward star center (negative = inward)
     vec2 sampleOffset = -outward * deflection;
-    sampleOffset.x /= aspectRatio;
+    sampleOffset.x /= aspectRatio; // undo aspect correction for sampling
 
     vec2 warpedUV = TexCoords + sampleOffset;
 
     vec3 hdrColor = texture(scene, warpedUV).rgb;
-    vec3 bloomColor = texture(bloomBlur, TexCoords).rgb;
-    hdrColor += bloomColor; // additive blending
+    vec3 bloomColor = texture(bloomBlur, warpedUV).rgb;
+    hdrColor += bloomColor;
 
-    // tone mapping
     vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-
     FragColor = vec4(result, 1.0);
 }
