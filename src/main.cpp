@@ -9,6 +9,9 @@
 #include "shaders/shader.h"
 #include "Framebuffer.h"
 #include "BloomRenderer.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 #define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
 #define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
@@ -275,6 +278,27 @@ struct Cone
     }
 };
 
+struct SimulationUI
+{
+    float lensStrength = 0.2f;
+
+    float beamRadius = 0.2f;
+    float beamLength = 5.0f;
+    float beamSpeed = 2.0f;
+    float beamIntensity = 5.0f;
+    float beamAlpha = 0.3f;
+
+    float starRadius = 1.0f;
+    float starMassSolar = 1.4f;
+    float rotationPeriod = 0.0014f;
+    float emissionStrength = 1.0f;
+
+    glm::vec3 starColor = glm::vec3(0.6f, 0.8f, 1.0f);
+    glm::vec3 beamColor = glm::vec3(0.6f, 0.8f, 1.0f);
+};
+
+SimulationUI ui;
+
 int main()
 {
     // CORE: very important in all projects
@@ -305,6 +329,17 @@ int main()
     {
         std::cout << "Failed to initialize GLAD" << std::endl; return -1;
     }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
     // CORE
 
     Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -316,7 +351,7 @@ int main()
     star.setupBuffers();
 
     Cone beamCone;
-    beamCone.generate(0.2f, 5.0f, 16);
+    beamCone.generate(ui.beamRadius, ui.beamLength, 32);
     beamCone.setupBuffers();
 
 
@@ -394,6 +429,38 @@ int main()
         
         process_input(window);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Neutron Star Controls");
+
+        ImGui::Text("Gravitational Lensing");
+        ImGui::SliderFloat("Lensing Strength", &ui.lensStrength, 0.0f, 5.0f);
+
+        ImGui::Separator();
+
+        ImGui::Text("Pulsar Beam");
+        ImGui::SliderFloat("Beam Radius", &ui.beamRadius, 0.05f, 1.5f);
+        ImGui::SliderFloat("Beam Length", &ui.beamLength, 1.0f, 15.0f);
+        ImGui::SliderFloat("Beam Speed", &ui.beamSpeed, 0.1f, 10.0f);
+        ImGui::SliderFloat("Beam Intensity", &ui.beamIntensity, 0.0f, 20.0f);
+        ImGui::SliderFloat("Beam Alpha", &ui.beamAlpha, 0.0f, 1.0f);
+        ImGui::ColorEdit3("Beam Color", glm::value_ptr(ui.beamColor));
+
+        ImGui::Separator();
+
+        ImGui::Text("Star Properties");
+        ImGui::SliderFloat("Star Radius", &ui.starRadius, 0.3f, 3.0f);
+        ImGui::SliderFloat("Star Mass", &ui.starMassSolar, 0.5f, 3.0f);
+        ImGui::SliderFloat("Rotation Period", &ui.rotationPeriod, 0.0005f, 0.01f);
+        ImGui::SliderFloat("Emission Strength", &ui.emissionStrength, 0.0f, 5.0f);
+        ImGui::ColorEdit3("Star Color", glm::value_ptr(ui.starColor));
+
+        ImGui::Text("Press ESC to toggle mouse capture.");
+
+        ImGui::End();
+
         // PASS 1: RENDER SCENE TO HDR FRAMEBUFFER
         hdrFBO.bind(); // Draw to our custom buffers, not the screen
         
@@ -405,8 +472,17 @@ int main()
         starShader.use();
         starShader.setVec3("viewPos", cameraPos);
         starShader.setFloat("time", currentFrame);
+        starShader.setVec3("starColor", ui.starColor);
+        starShader.setFloat("emissiveStrength", ui.emissionStrength);
 
         star.update(deltaTime);
+
+        star.radius = ui.starRadius;
+        star.mass = ui.starMassSolar * solarMass;
+        star.period = ui.rotationPeriod;
+        star.rotationSpeed = (2.0f * PI) / star.period;
+        star.color = ui.starColor;
+        star.emissionStrength = ui.emissionStrength;
 
         // Matrix Math for the Star
         glm::mat4 model = glm::mat4(1.0f);
@@ -427,13 +503,22 @@ int main()
         beamShader.use();
         beamShader.setFloat("time", currentFrame);
 
-        float pulsePhase = sin(currentFrame * 2.0f * 2.0f * PI) * 0.5f + 0.5f;
+        float pulsePhase = sin(currentFrame * ui.beamSpeed * 2.0f * PI) * 0.5f + 0.5f;
+
         beamShader.setFloat("pulsePhase", pulsePhase);
+        beamShader.setVec3("beamColor", ui.beamColor);
+        beamShader.setFloat("beamIntensity", ui.beamIntensity);
+        beamShader.setFloat("beamAlpha", ui.beamAlpha);
+        beamShader.setFloat("beamLength", ui.beamLength);
 
         // North Beam
         glm::mat4 beamModel = glm::mat4(1.0f);
         beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
         beamModel = glm::translate(beamModel, glm::vec3(0.0f, 1.0f, 0.0f));
+        beamModel = glm::scale(
+            beamModel,
+            glm::vec3(ui.beamRadius / 0.2f, ui.beamLength / 5.0f, ui.beamRadius / 0.2f)
+        );
         beamShader.setMat4("model", beamModel);
         beamShader.setMat4("view", view);
         beamShader.setMat4("projection", projection);
@@ -445,6 +530,10 @@ int main()
         beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
         beamModel = glm::translate(beamModel, glm::vec3(0.0f, -1.0f, 0.0f));
         beamModel = glm::rotate(beamModel, PI, glm::vec3(1.0f, 0.0f, 0.0f));
+        beamModel = glm::scale(
+            beamModel,
+            glm::vec3(ui.beamRadius / 0.2f, ui.beamLength / 5.0f, ui.beamRadius / 0.2f)
+        );
         beamShader.setMat4("model", beamModel);
         beamCone.render();
 
@@ -491,11 +580,14 @@ int main()
         bloom.finalShader->use();
         bloom.finalShader->setVec2("starScreenPos", starScreenPos);
         bloom.finalShader->setFloat("starApparentRadius", apparentRadiusUV);
-        bloom.finalShader->setFloat("lensStrength", 0.2f);
+        bloom.finalShader->setFloat("lensStrength", ui.lensStrength);
         bloom.finalShader->setFloat("aspectRatio", (float)SCR_WIDTH / (float)SCR_HEIGHT);
 
         // PASS 2 & 3: BLOOM BLUR & FINAL COMPOSITE
         bloom.renderBloom(hdrFBO.colorBuffers[0], hdrFBO.colorBuffers[1]);
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -506,6 +598,10 @@ int main()
     bloom.cleanup();
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
