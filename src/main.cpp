@@ -290,7 +290,7 @@ struct SimulationUI
 
     float starRadius = 1.0f;
     float starMassSolar = 1.4f;
-    float rotationPeriod = 0.0014f;
+    float rotationPeriod = 5.0f;
     float emissionStrength = 1.0f;
 
     glm::vec3 starColor = glm::vec3(0.6f, 0.8f, 1.0f);
@@ -453,7 +453,7 @@ int main()
         ImGui::Text("Star Properties");
         ImGui::SliderFloat("Star Radius", &ui.starRadius, 0.3f, 3.0f);
         ImGui::SliderFloat("Star Mass", &ui.starMassSolar, 0.5f, 3.0f);
-        ImGui::SliderFloat("Rotation Period", &ui.rotationPeriod, 0.0005f, 0.01f);
+        ImGui::SliderFloat("Rotation Period", &ui.rotationPeriod, 0.5f, 20.0f);
         ImGui::SliderFloat("Emission Strength", &ui.emissionStrength, 0.0f, 5.0f);
         ImGui::ColorEdit3("Star Color", glm::value_ptr(ui.starColor));
 
