@@ -486,8 +486,8 @@ int main()
 
         // Matrix Math for the Star
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(ui.starRadius));
         model = glm::rotate(model, star.rotationSpeed * currentFrame, star.rotationAxis);
+        model = glm::scale(model, glm::vec3(ui.starRadius));
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
@@ -510,7 +510,6 @@ int main()
         beamShader.setVec3("beamColor", ui.beamColor);
         beamShader.setFloat("beamIntensity", ui.beamIntensity);
         beamShader.setFloat("beamAlpha", ui.beamAlpha);
-        beamShader.setFloat("beamLength", ui.beamLength);
 
         // North Beam
         glm::mat4 beamModel = glm::mat4(1.0f);
