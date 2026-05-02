@@ -280,7 +280,7 @@ struct Cone
 
 struct SimulationUI
 {
-    float lensStrength = 0.2f;
+    float lensStrength = 0.25f;
 
     float beamRadius = 0.2f;
     float beamLength = 5.0f;
@@ -436,7 +436,7 @@ int main()
         ImGui::Begin("Neutron Star Controls");
 
         ImGui::Text("Gravitational Lensing");
-        ImGui::SliderFloat("Lensing Strength", &ui.lensStrength, 0.0f, 5.0f);
+        ImGui::SliderFloat("Lensing Strength", &ui.lensStrength, 0.0f, 1.0f);
 
         ImGui::Separator();
 
@@ -453,6 +453,11 @@ int main()
         ImGui::Text("Star Properties");
         ImGui::SliderFloat("Star Radius", &ui.starRadius, 0.3f, 3.0f);
         ImGui::SliderFloat("Star Mass", &ui.starMassSolar, 0.5f, 3.0f);
+        
+        float compactnessPreview = (ui.starMassSolar / 1.4f) / ui.starRadius;
+        ImGui::Text("Compactness: %.2f", compactnessPreview);
+        ImGui::Text("Mass affects lensing through mass / radius.");
+        ImGui::Text("Effective Lensing: %.2f", ui.lensStrength * (ui.starMassSolar / 1.4f));
         ImGui::SliderFloat("Rotation Period", &ui.rotationPeriod, 0.5f, 20.0f);
         ImGui::SliderFloat("Emission Strength", &ui.emissionStrength, 0.0f, 5.0f);
         ImGui::ColorEdit3("Star Color", glm::value_ptr(ui.starColor));
@@ -580,7 +585,11 @@ int main()
         bloom.finalShader->use();
         bloom.finalShader->setVec2("starScreenPos", starScreenPos);
         bloom.finalShader->setFloat("starApparentRadius", apparentRadiusUV);
+
+        float compactness = (ui.starMassSolar / 1.4f) / ui.starRadius;
+
         bloom.finalShader->setFloat("lensStrength", ui.lensStrength);
+        bloom.finalShader->setFloat("lensCompactness", compactness);
         bloom.finalShader->setFloat("aspectRatio", (float)SCR_WIDTH / (float)SCR_HEIGHT);
 
         // PASS 2 & 3: BLOOM BLUR & FINAL COMPOSITE

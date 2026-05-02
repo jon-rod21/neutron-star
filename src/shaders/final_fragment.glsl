@@ -8,39 +8,71 @@ uniform sampler2D bloomBlur;
 uniform float exposure;
 
 // Gravitational lensing
-uniform vec2 starScreenPos;       // star center in [0,1] UV
-uniform float starApparentRadius; // apparent radius in vertical UV units
+uniform vec2 starScreenPos;
+uniform float starApparentRadius;
 uniform float lensStrength;
+uniform float lensCompactness;
 uniform float aspectRatio;
 
 void main()
 {
-    vec2 offset = TexCoords - starScreenPos;
-    offset.x *= aspectRatio; // make distance metric circular
+    vec2 uv = TexCoords;
+
+    vec2 offset = uv - starScreenPos;
+    offset.x *= aspectRatio;
+
     float r = length(offset);
-    float safeR = max(r, 1e-5);
-    vec2 outward = offset / safeR;
+    float safeR = max(r, 0.00001);
 
-    // Warp only outside the star's silhouette
-    // Ramp up over a band that extends 2x the star radius beyond the limb
-    float outerEdge = starApparentRadius * 3.0;
-    float silhouetteMask = smoothstep(starApparentRadius, outerEdge, r);
+    vec2 radialDir = offset / safeR;
 
-    // 1/r deflection — light bends toward mass
-    // lensStrength controls how many UV units the rays bend at the limb
-    float deflection = (lensStrength * starApparentRadius) / safeR;
-    deflection *= silhouetteMask;
+    float starR = max(starApparentRadius, 0.0001);
+    float compactness = clamp(lensCompactness, 0.2, 4.0);
 
-    // Bend toward star center (negative = inward)
-    vec2 sampleOffset = -outward * deflection;
-    sampleOffset.x /= aspectRatio; // undo aspect correction for sampling
+    // Lens influence grows with compactness, but stays local around the star.
+    float influenceRadius = starR * mix(3.0, 7.0, clamp(compactness / 4.0, 0.0, 1.0));
+    influenceRadius = clamp(influenceRadius, starR * 2.5, 0.45);
 
-    vec2 warpedUV = TexCoords + sampleOffset;
+    // Do not warp the visible star surface itself.
+    float outsideStar = smoothstep(starR * 1.05, starR * 1.35, r);
+
+    // Fade lensing out smoothly so the whole screen does not bend weirdly.
+    float outerFade = 1.0 - smoothstep(influenceRadius * 0.65, influenceRadius, r);
+
+    float lensMask = outsideStar * outerFade;
+
+    // Normalized distance from the star limb.
+    float rNorm = safeR / starR;
+
+    // Stable screen-space approximation:
+    // strongest near the limb, falls off smoothly with distance.
+    float deflection = lensStrength * compactness * starR * (1.0 / max(rNorm, 1.0));
+
+    // Clamp prevents extreme ugly stretching.
+    deflection = min(deflection, starR * 0.35);
+
+    deflection *= lensMask;
+
+    // Bend background light toward the star.
+    vec2 sampleOffset = -radialDir * deflection;
+    sampleOffset.x /= aspectRatio;
+
+    vec2 warpedUV = uv + sampleOffset;
+    warpedUV = clamp(warpedUV, vec2(0.001), vec2(0.999));
 
     vec3 hdrColor = texture(scene, warpedUV).rgb;
     vec3 bloomColor = texture(bloomBlur, warpedUV).rgb;
-    hdrColor += bloomColor;
 
-    vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
+    vec3 color = hdrColor + bloomColor;
+
+    // Add a subtle Einstein/photon-ring style brightening near the limb.
+    float ring = 1.0 - smoothstep(0.0, starR * 0.18, abs(r - starR * 1.18));
+    ring *= outerFade;
+    ring *= clamp(compactness / 3.0, 0.0, 1.0);
+    ring *= lensStrength;
+
+    color += vec3(0.35, 0.55, 1.0) * ring * 0.6;
+
+    vec3 result = vec3(1.0) - exp(-color * exposure);
     FragColor = vec4(result, 1.0);
 }
