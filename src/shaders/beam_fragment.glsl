@@ -8,20 +8,20 @@ in vec3 Normal;
 uniform float time;
 uniform float pulsePhase;
 
+uniform vec3 beamColor;
+uniform float beamIntensity;
+uniform float beamAlpha;
+uniform float beamLength;
+
 void main()
 {
-    vec3 beamColor = vec3(0.6, 0.8, 1.0);
+    float distanceFromBase = abs(FragPos.y);
+    float falloff = 1.0 - smoothstep(0.0, beamLength, distanceFromBase);
 
-    float distanceFromBase = FragPos.y;
-    float falloff = 1.0 - smoothstep(0.0, 5.0, abs(distanceFromBase));
-    
-    float intensity = pulsePhase * falloff * 5.0;
+    float intensity = pulsePhase * falloff * beamIntensity;
 
     vec3 result = beamColor * intensity;
 
-    FragColor = vec4(result, intensity * 0.3);
+    FragColor = vec4(result, beamAlpha);
     BrightColor = vec4(result, 1.0);
 }
-
-    
-
