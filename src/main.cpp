@@ -12,6 +12,8 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "SimulationUI.h"
+#include "audio/AudioEngine.h"
 
 #define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
 #define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
@@ -362,104 +364,7 @@ struct SpacetimeGrid {
     }
 };
 
-struct MagneticField {
-    struct FieldLine {
-        unsigned int VAO, VBO;
-        int pointCount;
-    };
-    std::vector<FieldLine> lines;
-
-    // magnetic axis — tilted like a real pulsar
-    glm::vec3 axis = glm::normalize(glm::vec3(0.3f, 1.0f, 0.0f));
-
-    void generate(float starRadius, float massSolar, float periodSeconds,
-                  int numLines = 12, int pointsPerLine = 150)
-    {
-        // Clean up previous geometry if regenerating
-        cleanup();
-
-        glm::vec3 up    = axis;
-        glm::vec3 perp  = glm::normalize(glm::cross(up, glm::vec3(0.0f, 0.0f, 1.0f)));
-        glm::vec3 perp2 = glm::normalize(glm::cross(up, perp));
-
-        // B field strength proxy: heavier + faster spinning = stronger field
-        // Physically: B ∝ sqrt(M / P), normalized around a 1.4 solar mass, 0.0014s pulsar
-        float massNorm = massSolar / 1.4f;
-        float periodNorm = periodSeconds / 1.0f; // reference: fast millisecond pulsar
-        float fieldStrength = sqrtf(massNorm / periodNorm); // stronger = further reach
-
-        // R0: how far field lines extend. Clamp so it never looks crazy
-        float R0 = glm::clamp(starRadius * 3.5f * fieldStrength, starRadius * 1.5f, starRadius * 8.0f);
-
-        for (int i = 0; i < numLines; i++) {
-            float phi = (float)i / numLines * 2.0f * PI;
-            std::vector<glm::vec3> pts;
-
-            for (int j = 0; j <= pointsPerLine; j++) {
-                float theta = glm::radians(5.0f) + (float)j / pointsPerLine * glm::radians(170.0f);
-                float r = R0 * sinf(theta) * sinf(theta);
-
-                float x_local = r * sinf(theta) * cosf(phi);
-                float y_local = r * cosf(theta);
-                float z_local = r * sinf(theta) * sinf(phi);
-
-                glm::vec3 worldPos = x_local * perp + y_local * up + z_local * perp2;
-                pts.push_back(worldPos);
-            }
-
-            FieldLine fl;
-            fl.pointCount = pts.size();
-            glGenVertexArrays(1, &fl.VAO);
-            glGenBuffers(1, &fl.VBO);
-            glBindVertexArray(fl.VAO);
-            glBindBuffer(GL_ARRAY_BUFFER, fl.VBO);
-            glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), pts.data(), GL_STATIC_DRAW);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-            glEnableVertexAttribArray(0);
-            glBindVertexArray(0);
-            lines.push_back(fl);
-        }
-    }
-
-    void render() {
-        for (auto& fl : lines) {
-            glBindVertexArray(fl.VAO);
-            glDrawArrays(GL_LINE_STRIP, 0, fl.pointCount);
-            glBindVertexArray(0);
-        }
-    }
-
-    void cleanup() {
-        for (auto& fl : lines) {
-            glDeleteVertexArrays(1, &fl.VAO);
-            glDeleteBuffers(1, &fl.VBO);
-        }
-        lines.clear();
-    }
-};
-
-struct SimulationUI
-{
-    float lensStrength = 0.25f;
-
-    float beamRadius = 0.2f;
-    float beamLength = 5.0f;
-    float beamSpeed = 2.0f;
-    float beamIntensity = 5.0f;
-    float beamAlpha = 0.3f;
-
-    float starRadius = 1.0f;
-    float starMassSolar = 1.4f;
-    float rotationPeriod = 5.0f;
-    float emissionStrength = 1.0f;
-
-    glm::vec3 starColor = glm::vec3(0.6f, 0.8f, 1.0f);
-    glm::vec3 beamColor = glm::vec3(0.6f, 0.8f, 1.0f);
-
-    bool gridVisible = false;
-    bool magFieldVisible = false;
-};
-
+audio::AudioEngine gAudio;
 SimulationUI ui;
 
 int main()
@@ -503,6 +408,7 @@ int main()
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    gAudio.start();
     // CORE
 
     Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -608,6 +514,16 @@ int main()
 
         ImGui::Begin("Neutron Star Controls");
 
+        if (ImGui::CollapsingHeader("Audio", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::SliderFloat("Master", &ui.masterVolume, 0.0f, 1.0f, "%.2f");
+            ImGui::Checkbox("Enable generative audio", &ui.audioEnabled);
+            if (!gAudio.deviceReady())
+                ImGui::TextDisabled("OpenAL not ready. Try: brew install openal-soft");
+        }
+
+        ImGui::Separator();
+
         ImGui::Text("Gravitational Lensing");
         ImGui::SliderFloat("Lensing Strength", &ui.lensStrength, 0.0f, 1.0f);
 
@@ -653,6 +569,8 @@ int main()
         ImGui::Text("Press ESC to toggle mouse capture.");
 
         ImGui::End();
+
+        gAudio.syncFromUi(ui);
 
         // PASS 1: RENDER SCENE TO HDR FRAMEBUFFER
         hdrFBO.bind(); // Draw to our custom buffers, not the screen
@@ -837,6 +755,8 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    gAudio.stop();
 
     star.cleanup();
     hdrFBO.cleanup();

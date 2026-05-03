@@ -39,11 +39,24 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
+
+if(APPLE)
+    list(APPEND CMAKE_PREFIX_PATH
+        "/opt/homebrew/opt/openal-soft"
+        "/usr/local/opt/openal-soft"
+    )
+endif()
+
+find_package(OpenAL REQUIRED)
 
 include_directories(libs/glad/include)
 
 add_executable(neutron
     src/main.cpp
+    src/audio/GenerativeSynth.cpp
+    src/audio/SimpleReverb.cpp
+    src/audio/AudioEngine.cpp
     libs/glad/src/glad.c
 
     ${imgui_SOURCE_DIR}/imgui.cpp
@@ -56,12 +69,22 @@ add_executable(neutron
 
 target_include_directories(neutron PRIVATE
     libs/glad/include
+    ${CMAKE_SOURCE_DIR}/src
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
 )
+
+if(TARGET OpenAL::OpenAL)
+    set(NEUTRON_OPENAL_LIB OpenAL::OpenAL)
+else()
+    target_include_directories(neutron PRIVATE ${OPENAL_INCLUDE_DIR})
+    set(NEUTRON_OPENAL_LIB ${OPENAL_LIBRARY})
+endif()
 
 target_link_libraries(neutron
     glfw
     glm::glm
     OpenGL::GL
+    ${NEUTRON_OPENAL_LIB}
+    Threads::Threads
 )
