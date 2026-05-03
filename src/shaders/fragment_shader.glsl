@@ -3,6 +3,7 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor; 
 
 in vec3 FragPos;
+in vec3 LocalPos;
 in vec3 Normal;
 in vec2 TexCoords;
 uniform float time;
@@ -70,7 +71,7 @@ void main()
     vec3 lighting = (ambient + diffuse + specular) * starColor;
     
     // Surface noise using FBM
-    vec3 noisePos = FragPos * 4.0 + vec3(time * 0.5); 
+    vec3 noisePos = LocalPos * 4.0;
     float surfaceNoise = fbm(noisePos);
 
     // Anything below 0.3 becomes pure black. Anything above 0.7 becomes max brightness.
@@ -79,13 +80,30 @@ void main()
     // Exponentially deepens the dark spots
     surfaceNoise = pow(surfaceNoise, 1.25);
     
-    // Poles brighter, its a pulsar after all
-    vec3 normalizedPos = normalize(FragPos);
-    float poleFactor = pow(abs(normalizedPos.y), 2.0);
+    vec3 normalizedPos = normalize(LocalPos);
+
+    // Beam axis in the star's local/object space.
+    // This matches the cone beams because your beams are placed at local +Y and -Y.
+    vec3 magneticAxis = vec3(0.0, 1.0, 0.0);
+
+    float northPole = max(dot(normalizedPos, magneticAxis), 0.0);
+    float southPole = max(dot(normalizedPos, -magneticAxis), 0.0);
+
+    // Tight bright caps exactly where beams come out.
+    float northHotspot = pow(northPole, 24.0);
+    float southHotspot = pow(southPole, 24.0);
+
+    // Wider glow around the magnetic poles.
+    float poleGlow = pow(abs(dot(normalizedPos, magneticAxis)), 6.0);
+
+    // Combined polar brightness.
+    float poleFactor = poleGlow * 0.6 + (northHotspot + southHotspot) * 2.5;
     
     // Emission varying across surface
-    float emissionPattern = 0.7 + surfaceNoise * 0.8 + poleFactor * 0.3;
-    vec3 baseEmission = starColor * emissiveStrength * emissionPattern;
+    float surfacePulse = 0.9 + 0.1 * sin(time * 6.0);
+    float emissionPattern = (0.55 + surfaceNoise * 0.55 + poleFactor) * surfacePulse;
+    vec3 hotspotColor = mix(starColor, vec3(0.9, 0.95, 1.0), clamp(northHotspot + southHotspot, 0.0, 1.0));
+    vec3 baseEmission = hotspotColor * emissiveStrength * emissionPattern;
 
     /* Rim Lighting */
     // Calculate the angle between the camera view and the surface normal.
