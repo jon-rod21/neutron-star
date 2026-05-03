@@ -22,4 +22,6 @@ struct SimulationUI
 
     float masterVolume = 0.65f;
     bool audioEnabled = true;
+    
+    bool gridVisible = false;
 };
