@@ -12,6 +12,8 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "SimulationUI.h"
+#include "audio/AudioEngine.h"
 
 #define VERTEX_SHADER SHADER_DIR "vertex_shader.glsl"
 #define FRAGMENT_SHADER SHADER_DIR "fragment_shader.glsl"
@@ -278,25 +280,7 @@ struct Cone
     }
 };
 
-struct SimulationUI
-{
-    float lensStrength = 0.25f;
-
-    float beamRadius = 0.2f;
-    float beamLength = 5.0f;
-    float beamSpeed = 2.0f;
-    float beamIntensity = 5.0f;
-    float beamAlpha = 0.3f;
-
-    float starRadius = 1.0f;
-    float starMassSolar = 1.4f;
-    float rotationPeriod = 5.0f;
-    float emissionStrength = 1.0f;
-
-    glm::vec3 starColor = glm::vec3(0.6f, 0.8f, 1.0f);
-    glm::vec3 beamColor = glm::vec3(0.6f, 0.8f, 1.0f);
-};
-
+audio::AudioEngine gAudio;
 SimulationUI ui;
 
 int main()
@@ -340,6 +324,7 @@ int main()
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    gAudio.start();
     // CORE
 
     Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -435,6 +420,16 @@ int main()
 
         ImGui::Begin("Neutron Star Controls");
 
+        if (ImGui::CollapsingHeader("Audio", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::SliderFloat("Master", &ui.masterVolume, 0.0f, 1.0f, "%.2f");
+            ImGui::Checkbox("Enable generative audio", &ui.audioEnabled);
+            if (!gAudio.deviceReady())
+                ImGui::TextDisabled("OpenAL not ready. Try: brew install openal-soft");
+        }
+
+        ImGui::Separator();
+
         ImGui::Text("Gravitational Lensing");
         ImGui::SliderFloat("Lensing Strength", &ui.lensStrength, 0.0f, 1.0f);
 
@@ -465,6 +460,8 @@ int main()
         ImGui::Text("Press ESC to toggle mouse capture.");
 
         ImGui::End();
+
+        gAudio.syncFromUi(ui);
 
         // PASS 1: RENDER SCENE TO HDR FRAMEBUFFER
         hdrFBO.bind(); // Draw to our custom buffers, not the screen
@@ -601,6 +598,8 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    gAudio.stop();
 
     star.cleanup();
     hdrFBO.cleanup();
