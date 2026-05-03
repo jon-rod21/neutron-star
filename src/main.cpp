@@ -280,6 +280,90 @@ struct Cone
     }
 };
 
+struct SpacetimeGrid {
+    std::vector<float> vertices;   // pos + uv
+    std::vector<unsigned int> indices;
+    unsigned int VAO, VBO, EBO;
+
+    void generate(int size, float spacing, float lineWidth, int subdivisions = 40) {
+        float hw = lineWidth * 0.5f;
+        float total = size * spacing;
+        float start = -total * 0.5f;
+        float end   =  total * 0.5f;
+
+        auto addQuadStrip = [&](bool alongX, float fixedCoord) {
+            int steps = size * subdivisions;
+            float stepSize = total / steps;
+
+            for (int s = 0; s < steps; s++) {
+                float t0 = start + s * stepSize;
+                float t1 = t0 + stepSize;
+
+                unsigned int base = vertices.size() / 3;
+
+                glm::vec3 a, b, c, d;
+                if (alongX) {
+                    // line runs along X, fixed Z = fixedCoord
+                    a = {t0, 0, fixedCoord - hw};
+                    b = {t1, 0, fixedCoord - hw};
+                    c = {t1, 0, fixedCoord + hw};
+                    d = {t0, 0, fixedCoord + hw};
+                } else {
+                    // line runs along Z, fixed X = fixedCoord
+                    a = {fixedCoord - hw, 0, t0};
+                    b = {fixedCoord - hw, 0, t1};
+                    c = {fixedCoord + hw, 0, t1};
+                    d = {fixedCoord + hw, 0, t0};
+                }
+
+                for (auto& v : {a, b, c, d}) {
+                    vertices.push_back(v.x);
+                    vertices.push_back(v.y);
+                    vertices.push_back(v.z);
+                }
+                indices.push_back(base + 0); indices.push_back(base + 1); indices.push_back(base + 2);
+                indices.push_back(base + 0); indices.push_back(base + 2); indices.push_back(base + 3);
+            }
+        };
+
+        for (int i = 0; i <= size; i++) {
+            float t = start + i * spacing;
+            addQuadStrip(true,  t);  // lines along X
+            addQuadStrip(false, t);  // lines along Z
+        }
+    }
+
+    void setupBuffers() {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+        glBindVertexArray(0);
+    }
+
+    void render() {
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    void cleanup() {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
+};
+
 audio::AudioEngine gAudio;
 SimulationUI ui;
 
@@ -339,8 +423,10 @@ int main()
     beamCone.generate(ui.beamRadius, ui.beamLength, 32);
     beamCone.setupBuffers();
 
-
-
+    Shader gridShader(SHADER_DIR "grid_vertex.glsl", SHADER_DIR "grid_fragment.glsl");
+    SpacetimeGrid grid;
+    grid.generate(50, 0.5f, 0.02f); // 50x50, 0.5 unit spacing
+    grid.setupBuffers();
 
     // HDR Framebuffer Post Processing
     // Initialize our custom HDR Framebuffer
@@ -457,6 +543,11 @@ int main()
         ImGui::SliderFloat("Emission Strength", &ui.emissionStrength, 0.0f, 5.0f);
         ImGui::ColorEdit3("Star Color", glm::value_ptr(ui.starColor));
 
+        ImGui::Separator();
+
+        ImGui::Text("Spacetime Grid");
+        ImGui::Checkbox("Show Grid (G)", &ui.gridVisible);
+
         ImGui::Text("Press ESC to toggle mouse capture.");
 
         ImGui::End();
@@ -499,6 +590,8 @@ int main()
 
         star.render();
 
+
+
         /* Beam Rendering */
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -539,8 +632,27 @@ int main()
         beamShader.setMat4("model", beamModel);
         beamCone.render();
 
-        glDisable(GL_BLEND);
         /* Beam Rendering */
+
+        // Grid Rendering
+        if (ui.gridVisible) 
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            gridShader.use();
+            gridShader.setMat4("view", view);
+            gridShader.setMat4("projection", projection);
+            gridShader.setVec3("starPos", star.position);
+            // Drive warp depth from mass — heavier star = deeper well
+            float gravStrength = 5.0f * (ui.starMassSolar / 1.4f);
+            gridShader.setFloat("gravStrength", gravStrength);
+            gridShader.setFloat("gravSoftening", ui.starRadius * 0.5f);
+
+            grid.render();
+        }
+
+        glDisable(GL_BLEND);
 
 
         // Render Procedural Skybox
@@ -604,6 +716,7 @@ int main()
     star.cleanup();
     hdrFBO.cleanup();
     bloom.cleanup();
+    grid.cleanup();
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
 
@@ -620,6 +733,7 @@ void process_input(GLFWwindow* window)
 {
     float cameraSpeed = 2.5f * deltaTime;
     static bool escPressed = false;
+    static bool gPressed = false;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -641,6 +755,19 @@ void process_input(GLFWwindow* window)
     else
     {
         escPressed = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) 
+    {
+        if (!gPressed) 
+        {
+            ui.gridVisible = !ui.gridVisible;
+            gPressed = true;
+        }
+    }
+    else 
+    {
+        gPressed = false;
     }
     
     if (cursorCaptured)
