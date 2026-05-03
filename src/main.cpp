@@ -428,6 +428,13 @@ int main()
     grid.generate(50, 0.5f, 0.02f); // 50x50, 0.5 unit spacing
     grid.setupBuffers();
 
+    Shader magShader(SHADER_DIR "magfield_vertex.glsl", SHADER_DIR "magfield_fragment.glsl");
+    MagneticField magField;
+    float lastMagMass   = ui.starMassSolar;
+    float lastMagPeriod = ui.rotationPeriod;
+    float lastMagRadius = ui.starRadius;
+    magField.generate(star.radius, ui.starMassSolar, ui.rotationPeriod, 16, 150);
+
     // HDR Framebuffer Post Processing
     // Initialize our custom HDR Framebuffer
     Framebuffer hdrFBO(SCR_WIDTH, SCR_HEIGHT);
@@ -489,8 +496,9 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    // Render Loop
+    
 
+    // Render Loop
     while (!glfwWindowShouldClose(window))
     {
         // Per-Frame Time Logic & Input
@@ -547,6 +555,16 @@ int main()
 
         ImGui::Text("Spacetime Grid");
         ImGui::Checkbox("Show Grid (G)", &ui.gridVisible);
+        ImGui::Text("Magnetic Field");
+        ImGui::Checkbox("Show Field (M)", &ui.magFieldVisible);
+        ImGui::Text("Field reacts to Star Mass and Rotation Period.");
+
+        // Show the current field reach for feedback
+        float massNorm = ui.starMassSolar / 1.4f;
+        float periodNorm = ui.rotationPeriod / 1.0f;
+        float fieldStr = sqrtf(massNorm / periodNorm);
+        float R0_preview = glm::clamp(ui.starRadius * 3.5f * fieldStr, ui.starRadius * 1.5f, ui.starRadius * 8.0f);
+        ImGui::Text("Field Reach: %.2f units", R0_preview);
 
         ImGui::Text("Press ESC to toggle mouse capture.");
 
@@ -592,10 +610,37 @@ int main()
 
 
 
-        /* Beam Rendering */
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        // Regenerate field lines if physical params changed
+        auto floatChanged = [](float a, float b) { return fabsf(a - b) > 1e-5f; };
+
+        if (floatChanged(ui.starMassSolar,  lastMagMass)   ||
+            floatChanged(ui.rotationPeriod, lastMagPeriod) ||
+            floatChanged(ui.starRadius,     lastMagRadius))
+        {
+            magField.generate(star.radius, ui.starMassSolar, ui.rotationPeriod, 16, 150);
+            lastMagMass   = ui.starMassSolar;
+            lastMagPeriod = ui.rotationPeriod;
+            lastMagRadius = ui.starRadius;
+        }
+
+        if (ui.magFieldVisible)
+        {
+            magShader.use();
+            glm::mat4 magModel = glm::mat4(1.0f);
+            magModel = glm::rotate(magModel, star.rotationSpeed * currentFrame, star.rotationAxis);
+            magShader.setMat4("model", magModel);
+            magShader.setMat4("view", view);
+            magShader.setMat4("projection", projection);
+            magShader.setVec3("fieldColor", glm::vec3(0.2f, 0.6f, 1.0f));
+            magShader.setFloat("fieldAlpha", 0.5f);
+            magField.render();
+        }
+
         
+        /* Beam Rendering */
         beamShader.use();
         beamShader.setFloat("time", currentFrame);
 
@@ -734,6 +779,7 @@ void process_input(GLFWwindow* window)
     float cameraSpeed = 2.5f * deltaTime;
     static bool escPressed = false;
     static bool gPressed = false;
+    static bool mPressed = false;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -757,6 +803,8 @@ void process_input(GLFWwindow* window)
         escPressed = false;
     }
 
+
+    // Grid Toggle
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) 
     {
         if (!gPressed) 
@@ -769,6 +817,21 @@ void process_input(GLFWwindow* window)
     {
         gPressed = false;
     }
+
+    // MagField Toggle
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+    {
+        if (!mPressed)
+        {
+            ui.magFieldVisible = !ui.magFieldVisible;
+            mPressed = true;
+        }
+    }
+    else
+    {
+        mPressed = false;
+    }
+
     
     if (cursorCaptured)
     {
