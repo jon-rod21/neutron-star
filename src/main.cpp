@@ -209,6 +209,11 @@ struct Cone
 
     void generate(float radius, float height, int segments)
     {
+        vertices.clear();
+        normals.clear();
+        indices.clear();
+
+        // Apex at origin
         vertices.push_back(0.0f);
         vertices.push_back(0.0f);
         vertices.push_back(0.0f);
@@ -217,6 +222,7 @@ struct Cone
         normals.push_back(1.0f);
         normals.push_back(0.0f);
 
+        // Base ring at -height
         for (int i = 0; i <= segments; i++)
         {
             float angle = (float)i / segments * 2.0f * PI;
@@ -227,15 +233,18 @@ struct Cone
             vertices.push_back(-height);
             vertices.push_back(z);
 
-            normals.push_back(0.0f);
-            normals.push_back(-1.0f);
-            normals.push_back(0.0f);
+            glm::vec3 normal = glm::normalize(glm::vec3(x, radius / height, z));
+
+            normals.push_back(normal.x);
+            normals.push_back(normal.y);
+            normals.push_back(normal.z);
         }
 
+        // Cone side triangles
         for (int i = 1; i <= segments; i++)
         {
             indices.push_back(0);
-            indices.push_back(1);
+            indices.push_back(i);
             indices.push_back(i + 1);
         }
     }
@@ -497,7 +506,7 @@ int main()
     star.setupBuffers();
 
     Cone beamCone;
-    beamCone.generate(ui.beamRadius, ui.beamLength, 32);
+    beamCone.generate(0.2f, 5.0f, 64);
     beamCone.setupBuffers();
 
     Shader gridShader(SHADER_DIR "grid_vertex.glsl", SHADER_DIR "grid_fragment.glsl");
@@ -607,11 +616,11 @@ int main()
         ImGui::Separator();
 
         ImGui::Text("Pulsar Beam");
-        ImGui::SliderFloat("Beam Radius", &ui.beamRadius, 0.05f, 1.5f);
-        ImGui::SliderFloat("Beam Length", &ui.beamLength, 1.0f, 15.0f);
+        ImGui::SliderFloat("Beam Radius", &ui.beamRadius, 0.05f, 2.0f);
+        ImGui::SliderFloat("Beam Length", &ui.beamLength, 2.0f, 25.0f);
         ImGui::SliderFloat("Beam Speed", &ui.beamSpeed, 0.1f, 10.0f);
-        ImGui::SliderFloat("Beam Intensity", &ui.beamIntensity, 0.0f, 20.0f);
-        ImGui::SliderFloat("Beam Alpha", &ui.beamAlpha, 0.0f, 1.0f);
+        ImGui::SliderFloat("Beam Intensity", &ui.beamIntensity, 1.0f, 40.0f);
+        ImGui::SliderFloat("Beam Alpha", &ui.beamAlpha, 0.1f, 1.5f);
         ImGui::ColorEdit3("Beam Color", glm::value_ptr(ui.beamColor));
 
         ImGui::Separator();
@@ -727,32 +736,72 @@ int main()
         beamShader.setVec3("beamColor", ui.beamColor);
         beamShader.setFloat("beamIntensity", ui.beamIntensity);
         beamShader.setFloat("beamAlpha", ui.beamAlpha);
+        beamShader.setVec3("viewPos", cameraPos);
 
-        // North Beam
-        glm::mat4 beamModel = glm::mat4(1.0f);
-        beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
-        beamModel = glm::translate(beamModel, glm::vec3(0.0f, 1.0f, 0.0f));
-        beamModel = glm::scale(
-            beamModel,
-            glm::vec3(ui.beamRadius / 0.2f, ui.beamLength / 5.0f, ui.beamRadius / 0.2f)
-        );
-        beamShader.setMat4("model", beamModel);
-        beamShader.setMat4("view", view);
-        beamShader.setMat4("projection", projection);
-        beamCone.render();
+        auto renderBeam = [&](bool north, float radiusScale, float lengthScale, float layerAlpha)
+            {
+                beamShader.setFloat("layerAlpha", layerAlpha);
 
+                glm::mat4 beamModel = glm::mat4(1.0f);
 
-        // Flip for south beam
-        beamModel = glm::mat4(1.0f);
-        beamModel = glm::rotate(beamModel, star.rotationSpeed * currentFrame, star.rotationAxis);
-        beamModel = glm::translate(beamModel, glm::vec3(0.0f, -1.0f, 0.0f));
-        beamModel = glm::rotate(beamModel, PI, glm::vec3(1.0f, 0.0f, 0.0f));
-        beamModel = glm::scale(
-            beamModel,
-            glm::vec3(ui.beamRadius / 0.2f, ui.beamLength / 5.0f, ui.beamRadius / 0.2f)
-        );
-        beamShader.setMat4("model", beamModel);
-        beamCone.render();
+                beamModel = glm::rotate(
+                    beamModel,
+                    star.rotationSpeed * currentFrame,
+                    star.rotationAxis
+                );
+
+                if (north)
+                {
+                    beamModel = glm::translate(
+                        beamModel,
+                        glm::vec3(0.0f, ui.starRadius, 0.0f)
+                    );
+
+                    beamModel = glm::rotate(
+                        beamModel,
+                        PI,
+                        glm::vec3(1.0f, 0.0f, 0.0f)
+                    );
+                }
+                else
+                {
+                    beamModel = glm::translate(
+                        beamModel,
+                        glm::vec3(0.0f, -ui.starRadius, 0.0f)
+                    );
+                }
+
+                beamModel = glm::scale(
+                    beamModel,
+                    glm::vec3(
+                        (ui.beamRadius / 0.2f) * radiusScale,
+                        (ui.beamLength / 5.0f) * lengthScale,
+                        (ui.beamRadius / 0.2f) * radiusScale
+                    )
+                );
+
+                beamShader.setMat4("model", beamModel);
+                beamShader.setMat4("view", view);
+                beamShader.setMat4("projection", projection);
+
+                beamCone.render();
+            };
+
+        glDepthMask(GL_FALSE);
+
+        // Outer glow layer
+        renderBeam(true, 2.4f, 1.25f, 0.45f);
+        renderBeam(false, 2.4f, 1.25f, 0.45f);
+
+        // Main beam body
+        renderBeam(true, 1.35f, 1.10f, 0.75f);
+        renderBeam(false, 1.35f, 1.10f, 0.75f);
+
+        // Bright inner core
+        renderBeam(true, 0.55f, 1.00f, 1.25f);
+        renderBeam(false, 0.55f, 1.00f, 1.25f);
+
+        glDepthMask(GL_TRUE);
 
         /* Beam Rendering */
 

@@ -6,11 +6,11 @@ struct SimulationUI
 {
     float lensStrength = 0.25f;
 
-    float beamRadius = 0.2f;
-    float beamLength = 5.0f;
-    float beamSpeed = 2.0f;
-    float beamIntensity = 5.0f;
-    float beamAlpha = 0.3f;
+    float beamRadius = 0.25f;
+    float beamLength = 8.0f;
+    float beamSpeed = 1.5f;
+    float beamIntensity = 12.0f;
+    float beamAlpha = 0.75f;
 
     float starRadius = 1.0f;
     float starMassSolar = 1.4f;
