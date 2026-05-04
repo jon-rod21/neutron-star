@@ -7,11 +7,9 @@
 Clone the repository using Git:
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone git@github.com:jon-rod21/neutron-star.git
 cd neutron-star
 ```
-
----
 
 ### Option 2 — Download ZIP from GitHub
 
@@ -19,8 +17,6 @@ cd neutron-star
 - Select **Download ZIP**.
 - Extract the ZIP file.
 - Open the extracted `neutron-star` folder.
-
----
 
 ### Option 3 — Download ZIP from eLearning / Course Website
 
@@ -38,11 +34,12 @@ Visual Studio Community 2026
 
 ## Linux / macOS
 
-Run:
+Have all dependencies installed for your specific system and then run:
 
 ```bash
 ./make_build.sh
 ```
+Go inside the `build/` folder and `make`, then `./neutron` to run the application.
 
 ---
 
@@ -78,8 +75,6 @@ Your folder should contain:
 - `libs`
 - `bin`
 
----
-
 ### 2. Generate the Build Files
 
 Open PowerShell inside the `neutron-star` project folder and run:
@@ -92,7 +87,6 @@ cmake `
  -B build
 ```
 
----
 
 ### 3. Build the Project
 
@@ -107,8 +101,6 @@ The executable will be generated in:
 ```text
 neutron-star/build/Debug
 ```
-
----
 
 ### 4. Copy the OpenAL DLL
 
@@ -130,8 +122,6 @@ The DLL is usually named:
 soft_oal.dll
 ```
 
----
-
 ### 5. Run the Program
 
 Run the executable:
@@ -145,8 +135,6 @@ from:
 ```text
 neutron-star/build/Debug
 ```
-
----
 
 ## Rebuilding the Build Folder (Windows)
 
