@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iostream>
 
+// Shader Creation Helper
 class Shader
 {
 public:

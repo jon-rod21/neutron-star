@@ -14,7 +14,6 @@ void main()
 {    
     vec3 dir = normalize(TexCoords);
     
-    // FIX 1: Grid Snapping (Stops the shimmering/recalculating effect)
     // This locks the math to invisible rigid chunks. 
     // Higher = tiny pinpoint stars. Lower = bigger, blocky stars.
     float resolution = 400.0; 
@@ -23,7 +22,6 @@ void main()
     // Generate the random value based on the GRID cell, not the fluid pixel
     float starValue = hash(gridId); 
     
-    // FIX 2: Density Control
     // Changed from 0.99 to 0.998. Now, only the top 0.2% of space generates a star.
     // If it's still too dense, push it to 0.999!
     if(starValue > 0.998) { 
