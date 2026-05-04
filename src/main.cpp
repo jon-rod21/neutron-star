@@ -280,6 +280,7 @@ struct Cone
     }
 };
 
+
 struct SpacetimeGrid {
     std::vector<float> vertices;   // pos + uv
     std::vector<unsigned int> indices;
@@ -364,6 +365,82 @@ struct SpacetimeGrid {
     }
 };
 
+struct MagneticField {
+    struct FieldLine {
+        unsigned int VAO, VBO;
+        int pointCount;
+    };
+    std::vector<FieldLine> lines;
+
+    // magnetic axis — tilted like a real pulsar
+    glm::vec3 axis = glm::normalize(glm::vec3(0.3f, 1.0f, 0.0f));
+
+    void generate(float starRadius, float massSolar, float periodSeconds,
+                  int numLines = 12, int pointsPerLine = 150)
+    {
+        // Clean up previous geometry if regenerating
+        cleanup();
+
+        glm::vec3 up    = axis;
+        glm::vec3 perp  = glm::normalize(glm::cross(up, glm::vec3(0.0f, 0.0f, 1.0f)));
+        glm::vec3 perp2 = glm::normalize(glm::cross(up, perp));
+
+        // B field strength proxy: heavier + faster spinning = stronger field
+        // Physically: B ∝ sqrt(M / P), normalized around a 1.4 solar mass, 0.0014s pulsar
+        float massNorm = massSolar / 1.4f;
+        float periodNorm = periodSeconds / 1.0f; // reference: fast millisecond pulsar
+        float fieldStrength = sqrtf(massNorm / periodNorm); // stronger = further reach
+
+        // R0: how far field lines extend. Clamp so it never looks crazy
+        float R0 = glm::clamp(starRadius * 3.5f * fieldStrength, starRadius * 1.5f, starRadius * 8.0f);
+
+        for (int i = 0; i < numLines; i++) {
+            float phi = (float)i / numLines * 2.0f * PI;
+            std::vector<glm::vec3> pts;
+
+            for (int j = 0; j <= pointsPerLine; j++) {
+                float theta = glm::radians(5.0f) + (float)j / pointsPerLine * glm::radians(170.0f);
+                float r = R0 * sinf(theta) * sinf(theta);
+
+                float x_local = r * sinf(theta) * cosf(phi);
+                float y_local = r * cosf(theta);
+                float z_local = r * sinf(theta) * sinf(phi);
+
+                glm::vec3 worldPos = x_local * perp + y_local * up + z_local * perp2;
+                pts.push_back(worldPos);
+            }
+
+            FieldLine fl;
+            fl.pointCount = pts.size();
+            glGenVertexArrays(1, &fl.VAO);
+            glGenBuffers(1, &fl.VBO);
+            glBindVertexArray(fl.VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, fl.VBO);
+            glBufferData(GL_ARRAY_BUFFER, pts.size() * sizeof(glm::vec3), pts.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+            glEnableVertexAttribArray(0);
+            glBindVertexArray(0);
+            lines.push_back(fl);
+        }
+    }
+
+    void render() {
+        for (auto& fl : lines) {
+            glBindVertexArray(fl.VAO);
+            glDrawArrays(GL_LINE_STRIP, 0, fl.pointCount);
+            glBindVertexArray(0);
+        }
+    }
+
+    void cleanup() {
+        for (auto& fl : lines) {
+            glDeleteVertexArrays(1, &fl.VAO);
+            glDeleteBuffers(1, &fl.VBO);
+        }
+        lines.clear();
+    }
+};
+
 audio::AudioEngine gAudio;
 SimulationUI ui;
 
@@ -428,6 +505,13 @@ int main()
     grid.generate(50, 0.5f, 0.02f); // 50x50, 0.5 unit spacing
     grid.setupBuffers();
 
+    Shader magShader(SHADER_DIR "magfield_vertex.glsl", SHADER_DIR "magfield_fragment.glsl");
+    MagneticField magField;
+    float lastMagMass   = ui.starMassSolar;
+    float lastMagPeriod = ui.rotationPeriod;
+    float lastMagRadius = ui.starRadius;
+    magField.generate(star.radius, ui.starMassSolar, ui.rotationPeriod, 16, 150);
+
     // HDR Framebuffer Post Processing
     // Initialize our custom HDR Framebuffer
     Framebuffer hdrFBO(SCR_WIDTH, SCR_HEIGHT);
@@ -489,8 +573,9 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    // Render Loop
+    
 
+    // Render Loop
     while (!glfwWindowShouldClose(window))
     {
         // Per-Frame Time Logic & Input
@@ -547,6 +632,16 @@ int main()
 
         ImGui::Text("Spacetime Grid");
         ImGui::Checkbox("Show Grid (G)", &ui.gridVisible);
+        ImGui::Text("Magnetic Field");
+        ImGui::Checkbox("Show Field (M)", &ui.magFieldVisible);
+        ImGui::Text("Field reacts to Star Mass and Rotation Period.");
+
+        // Show the current field reach for feedback
+        float massNorm = ui.starMassSolar / 1.4f;
+        float periodNorm = ui.rotationPeriod / 1.0f;
+        float fieldStr = sqrtf(massNorm / periodNorm);
+        float R0_preview = glm::clamp(ui.starRadius * 3.5f * fieldStr, ui.starRadius * 1.5f, ui.starRadius * 8.0f);
+        ImGui::Text("Field Reach: %.2f units", R0_preview);
 
         ImGui::Text("Press ESC to toggle mouse capture.");
 
@@ -592,10 +687,37 @@ int main()
 
 
 
-        /* Beam Rendering */
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        // Regenerate field lines if physical params changed
+        auto floatChanged = [](float a, float b) { return fabsf(a - b) > 1e-5f; };
+
+        if (floatChanged(ui.starMassSolar,  lastMagMass)   ||
+            floatChanged(ui.rotationPeriod, lastMagPeriod) ||
+            floatChanged(ui.starRadius,     lastMagRadius))
+        {
+            magField.generate(star.radius, ui.starMassSolar, ui.rotationPeriod, 16, 150);
+            lastMagMass   = ui.starMassSolar;
+            lastMagPeriod = ui.rotationPeriod;
+            lastMagRadius = ui.starRadius;
+        }
+
+        if (ui.magFieldVisible)
+        {
+            magShader.use();
+            glm::mat4 magModel = glm::mat4(1.0f);
+            magModel = glm::rotate(magModel, star.rotationSpeed * currentFrame, star.rotationAxis);
+            magShader.setMat4("model", magModel);
+            magShader.setMat4("view", view);
+            magShader.setMat4("projection", projection);
+            magShader.setVec3("fieldColor", glm::vec3(0.2f, 0.6f, 1.0f));
+            magShader.setFloat("fieldAlpha", 0.5f);
+            magField.render();
+        }
+
         
+        /* Beam Rendering */
         beamShader.use();
         beamShader.setFloat("time", currentFrame);
 
@@ -734,6 +856,7 @@ void process_input(GLFWwindow* window)
     float cameraSpeed = 2.5f * deltaTime;
     static bool escPressed = false;
     static bool gPressed = false;
+    static bool mPressed = false;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -757,6 +880,8 @@ void process_input(GLFWwindow* window)
         escPressed = false;
     }
 
+
+    // Grid Toggle
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) 
     {
         if (!gPressed) 
@@ -769,6 +894,21 @@ void process_input(GLFWwindow* window)
     {
         gPressed = false;
     }
+
+    // MagField Toggle
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+    {
+        if (!mPressed)
+        {
+            ui.magFieldVisible = !ui.magFieldVisible;
+            mPressed = true;
+        }
+    }
+    else
+    {
+        mPressed = false;
+    }
+
     
     if (cursorCaptured)
     {
