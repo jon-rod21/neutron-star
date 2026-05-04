@@ -29,26 +29,26 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 // Camera State
-glm::vec3 cameraPos   = glm::vec3(2.5f, 2.5f, 10.0f);
+glm::vec3 cameraPos = glm::vec3(2.5f, 2.5f, 10.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f,  0.0f);
 
-int SCR_WIDTH  = 800;
+int SCR_WIDTH = 800;
 int SCR_HEIGHT = 600;
 
-bool  firstMouse = true;
-float yaw        = -90.0f;
-float pitch      =   0.0f;
-float lastX      = SCR_WIDTH  / 2.0f;
-float lastY      = SCR_HEIGHT / 2.0f;
-float fov        =  45.0f;
+bool firstMouse = true;
+float yaw = -90.0f;
+float pitch = 0.0f;
+float lastX = SCR_WIDTH  / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+float fov = 45.0f;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // Globals
 audio::AudioEngine gAudio;
-SimulationUI       ui;
+SimulationUI ui;
 
 
 // main
@@ -93,11 +93,11 @@ int main()
     gAudio.start();
 
     // Shader loading
-    Shader starShader  (VERTEX_SHADER,                     FRAGMENT_SHADER);
-    Shader skyboxShader(SHADER_DIR "skybox_vertex.glsl",   SHADER_DIR "skybox_fragment.glsl");
-    Shader beamShader  (VERTEX_SHADER,                     SHADER_DIR "beam_fragment.glsl");
-    Shader gridShader  (SHADER_DIR "grid_vertex.glsl",     SHADER_DIR "grid_fragment.glsl");
-    Shader magShader   (SHADER_DIR "magfield_vertex.glsl", SHADER_DIR "magfield_fragment.glsl");
+    Shader starShader(VERTEX_SHADER, FRAGMENT_SHADER);
+    Shader skyboxShader(SHADER_DIR "skybox_vertex.glsl", SHADER_DIR "skybox_fragment.glsl");
+    Shader beamShader(VERTEX_SHADER, SHADER_DIR "beam_fragment.glsl");
+    Shader gridShader(SHADER_DIR "grid_vertex.glsl", SHADER_DIR "grid_fragment.glsl");
+    Shader magShader(SHADER_DIR "magfield_vertex.glsl", SHADER_DIR "magfield_fragment.glsl");
 
     // Scene object setup
     NeutronStar star(1.0f, 1.4f, 128, 64, 0.0014f);
@@ -113,13 +113,13 @@ int main()
     grid.setupBuffers();
 
     MagneticField magField;
-    float lastMagMass   = ui.starMassSolar;
+    float lastMagMass = ui.starMassSolar;
     float lastMagPeriod = ui.rotationPeriod;
     float lastMagRadius = ui.starRadius;
     magField.generate(star.radius, ui.starMassSolar, ui.rotationPeriod, 16, 150);
 
     // HDR framebuffer & bloom post-processing
-    Framebuffer   hdrFBO(SCR_WIDTH, SCR_HEIGHT);
+    Framebuffer hdrFBO(SCR_WIDTH, SCR_HEIGHT);
     BloomRenderer bloom(SCR_WIDTH, SCR_HEIGHT);
 
     // Procedural skybox geometry (unit cube, 36 verts)
