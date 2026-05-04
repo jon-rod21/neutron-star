@@ -9,7 +9,7 @@ uniform mat4 view;
 void main()
 {
     TexCoords = aPos;
-    // Apply projection and view, but strip the translation from the view matrix in C++
+    // Apply projection and view, but strip the translation from the view matrix
     vec4 pos = projection * view * vec4(aPos, 1.0);
     
     // pos.xyww forces the depth (z) to always equal the w component (which becomes 1.0 after perspective division). 
