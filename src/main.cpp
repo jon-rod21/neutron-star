@@ -183,7 +183,7 @@ int main()
         ImGui::Separator();
         ImGui::Text("Pulsar Beam");
         ImGui::SliderFloat("Beam Radius", &ui.beamRadius, 0.05f, 1.5f);
-        ImGui::SliderFloat("Beam Length", &ui.beamLength, 1.0f, 15.0f);
+        ImGui::SliderFloat("Beam Length", &ui.beamLength, 1.0f, 105.0f);
         ImGui::SliderFloat("Beam Speed", &ui.beamSpeed, 0.1f, 10.0f);
         ImGui::SliderFloat("Beam Intensity", &ui.beamIntensity, 0.0f, 20.0f);
         ImGui::SliderFloat("Beam Alpha", &ui.beamAlpha, 0.0f,  1.0f);
