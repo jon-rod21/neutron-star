@@ -1,46 +1,60 @@
 # Neutron Star Render in OpenGL
 
-## How to Run
+## Downloading the Project
 
-### Linux / macOS
+### Option 1 — Clone the Repository (Recommended)
 
-Clone this repo, then run the `make_build.sh` script and you should be good to go.
+Clone the repository using Git:
 
----
-
-### Windows
-
-Download the project folder and open it in the Visual Studio IDE.
-
-- Ensure you have moved into the project directory in the terminal/PowerShell before running any commands below.
-- The executable will be produced in the `neutron-star/build/Debug` folder.
-- After following the setup instructions below, run the `neutron` executable.
-
----
-
-## Rebuilding the Build Folder (Windows)
-
-To delete and rebuild the `build` folder:
-
-```powershell
-Remove-Item -Recurse -Force build
+```bash
+git clone <REPOSITORY_URL>
+cd neutron-star
 ```
 
-Then follow the instructions below.
+---
+
+### Option 2 — Download ZIP from GitHub
+
+- Click the green **Code** button on the GitHub repository page.
+- Select **Download ZIP**.
+- Extract the ZIP file.
+- Open the extracted `neutron-star` folder.
 
 ---
 
-## Windows OpenAL Setup
+### Option 3 — Download ZIP from eLearning / Course Website
 
-For Windows, results may vary, so it is best to follow the setup below carefully.
+- Download the provided ZIP file.
+- Extract the ZIP file.
+- Open the extracted `neutron-star` source folder in:
 
-The project uses OpenAL Soft.
+```text
+Visual Studio Community 2026
+```
 
-First, download OpenAL Soft from:
+---
+
+# How to Run
+
+## Linux / macOS
+
+Run:
+
+```bash
+./make_build.sh
+```
+
+---
+
+## Windows Setup
+
+### 1. Install OpenAL Soft
+
+Download OpenAL Soft from:
 
 https://openal-soft.org/
 
-Download the:
+Download:
 
 ```text
 openal-soft-1.25.1-bin.zip
@@ -52,15 +66,13 @@ Extract it into:
 C:\
 ```
 
-Ideally, do not place it anywhere else, otherwise you will need to manually change the OpenAL paths during CMake generation.
-
 Rename the extracted folder to:
 
 ```text
 OpenAL
 ```
 
-Ensure the folder contains:
+Your folder should contain:
 
 - `include`
 - `libs`
@@ -68,9 +80,9 @@ Ensure the folder contains:
 
 ---
 
-## Generate the CMake Build Files
+### 2. Generate the Build Files
 
-Run the following command in PowerShell:
+Open PowerShell inside the `neutron-star` project folder and run:
 
 ```powershell
 cmake `
@@ -82,7 +94,7 @@ cmake `
 
 ---
 
-## Build the Project
+### 3. Build the Project
 
 Run:
 
@@ -90,25 +102,17 @@ Run:
 cmake --build build
 ```
 
----
-
-## OpenAL DLL Setup
-
-After building, you should find the executable:
-
-```text
-neutron
-```
-
-inside:
+The executable will be generated in:
 
 ```text
 neutron-star/build/Debug
 ```
 
-Do **not** run it yet.
+---
 
-Next, copy the OpenAL DLL file from:
+### 4. Copy the OpenAL DLL
+
+Copy the DLL file from:
 
 ```text
 C:/OpenAL/bin/Win64
@@ -120,27 +124,45 @@ into:
 neutron-star/build/Debug
 ```
 
-The DLL file is usually named:
+The DLL is usually named:
 
 ```text
 soft_oal.dll
 ```
 
-The filename itself does not matter much since it should be the only DLL inside the `Win64` folder.
+---
 
-Once copied into `neutron-star/build/Debug`, you can run the:
+### 5. Run the Program
+
+Run the executable:
 
 ```text
 neutron
 ```
 
-executable.
+from:
+
+```text
+neutron-star/build/Debug
+```
 
 ---
 
-## Dependencies
+## Rebuilding the Build Folder (Windows)
 
-The project uses the following dependencies:
+To delete and regenerate the build folder:
+
+```powershell
+Remove-Item -Recurse -Force build
+```
+
+Then repeat the build steps above.
+
+---
+
+# Dependencies
+
+The project uses:
 
 - GLEW
 - GLAD
