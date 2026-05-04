@@ -39,7 +39,7 @@ int SCR_HEIGHT = 600;
 bool firstMouse = true;
 float yaw = -90.0f;
 float pitch = 0.0f;
-float lastX = SCR_WIDTH  / 2.0f;
+float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 float fov = 45.0f;
 
@@ -50,8 +50,6 @@ float lastFrame = 0.0f;
 audio::AudioEngine gAudio;
 SimulationUI ui;
 
-
-// main
 int main()
 {
     // GLFW / OpenGL context setup
